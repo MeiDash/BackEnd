@@ -66,7 +66,7 @@ BackEnd/
 
 - Python 3.10 ou superior
 - pip (gerenciador de pacotes Python)
-- PostgreSQL (ou outro banco de dados suportado por SQLAlchemy)
+- PostgreSQL (instalado e rodando localmente)
 
 ### Passos
 
@@ -87,13 +87,22 @@ source venv/bin/activate  # No Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-4. **Configurar variáveis de ambiente**
+4. **Configurar PostgreSQL**
+   - Instale e inicie o PostgreSQL (ex.: via pgAdmin ou linha de comando).
+   - Crie um banco de dados vazio (ex.: nome "MeiDAsh" ou outro de sua escolha).
+
+5. **Configurar variáveis de ambiente**
 ```bash
 cp .env.example .env
-# Editar o arquivo .env com suas configurações
+# Edite o .env com suas credenciais PostgreSQL (ex.: DATABASE_URL=postgresql://postgres:sua_senha@localhost:5432/MeiDAsh)
 ```
 
-5. **Executar a aplicação**
+6. **Inicializar banco de dados (opcional, para dados de teste)**
+```bash
+python init_db.py
+```
+
+7. **Executar a aplicação**
 ```bash
 python run.py
 ```
@@ -146,7 +155,27 @@ CREATE TABLE users (
 
 ### Criar tabelas automaticamente
 
-As tabelas são criadas automaticamente ao iniciar a aplicação.
+As tabelas são criadas automaticamente ao iniciar a aplicação com base nos modelos SQLAlchemy (ex.: `app/models/user.py`). Não é necessário criar manualmente no pgAdmin.
+
+### Dados de teste
+
+Execute `python init_db.py` para inserir usuários de teste (admin@example.com / admin123 e test@example.com / test123). Isso é opcional e só insere se não existirem.
+
+## 👥 Colaboração e Desenvolvimento
+
+### Para outros desenvolvedores
+
+1. **Configure seu PostgreSQL local**: Crie um banco vazio (mesmo nome ou diferente, ajustado no `.env`).
+2. **Copie o `.env.example`** para `.env` e ajuste as credenciais locais (não compartilhe senhas reais).
+3. **Estrutura idêntica**: As tabelas serão criadas automaticamente com a mesma estrutura (campos, índices) definida no código.
+4. **Dados independentes**: Cada dev tem seus próprios dados locais; use `init_db.py` para dados consistentes de teste.
+5. **Não versionar `.env`**: Ele está no `.gitignore` para proteger credenciais.
+
+### Boas práticas
+
+- Use bancos locais para desenvolvimento.
+- Para produção, configure variáveis de ambiente no servidor (ex.: Azure Key Vault).
+- Evite inserir dados de teste em produção; use migrações para esquemas.
 
 ## 🔐 Segurança
 
@@ -223,14 +252,20 @@ gunicorn -w 4 -k uvicorn.workers.UvicornWorker app.main:app
 
 ## 📝 Variáveis de Ambiente
 
+Copie `.env.example` para `.env` e ajuste os valores:
+
 ```
-DATABASE_URL=postgresql://user:password@localhost:5432/backend_db
-SECRET_KEY=sua-chave-secreta-muito-segura
+DATABASE_URL=postgresql://postgres:sua_senha@localhost:5432/MeiDAsh
+SECRET_KEY=sua-chave-secreta-segura
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
 ENVIRONMENT=development
 ```
+
+- **DATABASE_URL**: Use suas credenciais PostgreSQL locais.
+- **SECRET_KEY**: Gere uma chave aleatória (ex.: via Python: `secrets.token_urlsafe(32)`).
+- **ALLOWED_ORIGINS**: Adicione URLs do frontend para CORS.
 
 ## 🐛 Troubleshooting
 

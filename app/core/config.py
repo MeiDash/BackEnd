@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     
     # Banco de dados
-    DATABASE_URL: str = "postgresql://user:password@localhost:5432/backend_db"
+    DATABASE_URL: str = "postgresql://user:password@localhost:5432/your_db_name"
     
     # Segurança
     SECRET_KEY: str = "your-secret-key-change-this-in-production"

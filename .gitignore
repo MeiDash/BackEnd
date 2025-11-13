@@ -31,4 +31,5 @@ env/
 *~
 .DS_Store
 .coverage
+*.db
 htmlcov/
