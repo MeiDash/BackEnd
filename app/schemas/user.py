@@ -1,12 +1,28 @@
 """
 Schemas (Pydantic models) para validação de dados de usuário — adaptados ao novo esquema oficial
 """
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional
 from datetime import datetime
 
 
-class UserBase(BaseModel):
+def to_camel(string: str) -> str:
+    parts = string.split("_")
+    return parts[0] + "".join(p.title() for p in parts[1:])
+
+
+class CamelModel(BaseModel):
+    """BaseModel que converte nomes snake_case em camelCase para aliases.
+
+    Isso mantém compatibilidade com a API existente (aceita snake_case no body),
+    mas apresenta os campos em camelCase na documentação (OpenAPI)."""
+    model_config = {
+        "alias_generator": to_camel,
+        "populate_by_name": True,
+    }
+
+
+class UserBase(CamelModel):
     """Schema base de usuário"""
     email: EmailStr = Field(..., description="Email do usuário")
     name: str = Field(..., min_length=1, max_length=120, description="Nome")
@@ -19,8 +35,15 @@ class UserCreate(UserBase):
     cnpj: Optional[str] = Field(None, description="CNPJ da empresa")
     occupation: Optional[str] = Field(None, description="Profissão/ocupação")
 
+    @field_validator('password')
+    @classmethod
+    def validate_password_length(cls, v):
+        if len(v.encode('utf-8')) > 72:
+            raise ValueError('password cannot be longer than 72 bytes (utf-8 encoded)')
+        return v
 
-class UserUpdate(BaseModel):
+
+class UserUpdate(CamelModel):
     """Schema para atualização de usuário"""
     email: Optional[EmailStr] = None
     name: Optional[str] = Field(None, min_length=1, max_length=120)
@@ -40,24 +63,26 @@ class UserResponse(UserBase):
     created_at: datetime
     updated_at: Optional[datetime] = None
     
-    class Config:
-        from_attributes = True
+    # pydantic v2 config
+    model_config = {
+        "from_attributes": True,
+    }
 
 
-class UserLogin(BaseModel):
+class UserLogin(CamelModel):
     """Schema para login de usuário"""
     email: EmailStr = Field(..., description="Email do usuário")
     password: str = Field(..., description="Senha do usuário")
 
 
-class Token(BaseModel):
+class Token(CamelModel):
     """Schema para token JWT"""
     access_token: str
     token_type: str = "bearer"
     expires_in: int
 
 
-class TokenData(BaseModel):
+class TokenData(CamelModel):
     """Schema para dados do token"""
     sub: str  # email do usuário
     exp: Optional[datetime] = None

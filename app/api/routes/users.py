@@ -16,7 +16,7 @@ router = APIRouter(
 )
 
 
-@router.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=UserResponse, response_model_by_alias=False, status_code=status.HTTP_201_CREATED)
 async def create_user(
     user_data: UserCreate,
     db: Session = Depends(get_db)
@@ -24,18 +24,29 @@ async def create_user(
     """
     Cria um novo usuário
     """
-    # Verificar se o usuário já existe
-    if UserService.user_exists(db, email=user_data.email, username=getattr(user_data, 'name', None)):
+    try:
+        # Verificar se o usuário já existe
+        if UserService.user_exists(db, email=user_data.email, username=getattr(user_data, 'name', None)):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email ou name já registrado"
+            )
+        
+        user = UserService.create_user(db, user_data)
+        return user
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Log do erro para debug
+        import logging
+        logging.error(f"Erro ao criar usuário: {str(e)}", exc_info=True)
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email ou name já registrado"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro interno: {str(e)}"
         )
-    
-    user = UserService.create_user(db, user_data)
-    return user
 
 
-@router.get("", response_model=list[UserResponse])
+@router.get("", response_model=list[UserResponse], response_model_by_alias=False)
 async def get_users(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
@@ -55,7 +66,7 @@ async def get_users(
     return users
 
 
-@router.get("/{user_id}", response_model=UserResponse)
+@router.get("/{user_id}", response_model=UserResponse, response_model_by_alias=False)
 async def get_user(
     user_id: int,
     db: Session = Depends(get_db)
@@ -74,7 +85,7 @@ async def get_user(
     return user
 
 
-@router.put("/{user_id}", response_model=UserResponse)
+@router.put("/{user_id}", response_model=UserResponse, response_model_by_alias=False)
 async def update_user(
     user_id: int,
     user_data: UserUpdate,

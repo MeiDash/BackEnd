@@ -19,7 +19,7 @@ router = APIRouter(
 )
 
 
-@router.post("/login", response_model=Token)
+@router.post("/login", response_model=Token, response_model_by_alias=False)
 async def login(
     user_credentials: UserLogin,
     db: Session = Depends(get_db)

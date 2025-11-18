@@ -179,23 +179,33 @@ Execute `python init_db.py` para inserir usuários de teste (admin@example.com /
 
 ## 🔐 Segurança
 
-- **Senhas**: Criptografadas com bcrypt
+- **Senhas**: Criptografadas com bcrypt (limite de 72 bytes UTF-8 por senha)
 - **Autenticação**: JWT (JSON Web Tokens)
 - **CORS**: Configurável por domínio
 - **Validação**: Pydantic schemas para todas as entradas
+
+### Validações de Dados
+
+- **Email**: Deve ser um endereço de email válido
+- **Nome**: Mínimo 1, máximo 120 caracteres
+- **Senha**: Mínimo 8 caracteres, máximo 72 bytes (UTF-8)
+- **CNPJ**: Opcional, formato livre
+- **Nome da Empresa**: Opcional, formato livre
+- **Ocupação**: Opcional, formato livre
 
 ## 🧪 Testes
 
 Para executar os testes:
 
 ```bash
-pytest
-```
+# Todos os testes
+python -m pytest tests/
 
-Com cobertura:
+# Com cobertura
+python -m pytest tests/ --cov=app --cov-report=term-missing
 
-```bash
-pytest --cov=app
+# Teste específico
+python -m pytest tests/test_api.py::TestUsers::test_create_user_success -v
 ```
 
 ## 🌐 Integração com Frontend

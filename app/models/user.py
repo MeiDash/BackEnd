@@ -20,7 +20,7 @@ class User(Base):
     cnpj = Column(String, nullable=True)
     occupation = Column(String, nullable=True)
     # coluna física chamada 'ativo' para manter compatibilidade com outros sistemas
-    is_active = Column('ativo', Boolean, default=True, index=True)
+    is_active = Column('ativo', Boolean, default=True, server_default='1', index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     

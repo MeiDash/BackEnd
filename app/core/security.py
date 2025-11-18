@@ -8,7 +8,17 @@ from passlib.context import CryptContext
 from app.core.config import settings
 
 # Configuração do contexto de criptografia
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Usar bcrypt em produção, mas plaintext para testes
+import os
+if os.getenv("TESTING"):
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+else:
+    pwd_context = CryptContext(
+        schemes=["bcrypt"],
+        deprecated="auto",
+        bcrypt__default_rounds=12,
+        bcrypt__ident="2b"  # Usar versão mais recente do bcrypt
+    )
 
 
 def hash_password(password: str) -> str:
