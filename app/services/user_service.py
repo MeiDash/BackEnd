@@ -20,7 +20,7 @@ class UserService:
     @staticmethod
     def get_user_by_username(db: Session, username: str) -> Optional[User]:
         """Obtém usuário por username"""
-        return db.query(User).filter(User.username == username).first()
+        return db.query(User).filter(User.name == username).first()
     
     @staticmethod
     def get_user_by_id(db: Session, user_id: int) -> Optional[User]:
@@ -47,8 +47,10 @@ class UserService:
         """Cria um novo usuário"""
         db_user = User(
             email=user_data.email,
-            username=user_data.username,
-            full_name=user_data.full_name,
+            name=user_data.name,
+            nome_empresa=getattr(user_data, "nome_empresa", None),
+            cnpj=getattr(user_data, "cnpj", None),
+            occupation=getattr(user_data, "occupation", None),
             hashed_password=hash_password(user_data.password),
         )
         db.add(db_user)
@@ -119,7 +121,7 @@ class UserService:
         if email:
             filters.append(User.email == email)
         if username:
-            filters.append(User.username == username)
+            filters.append(User.name == username)
         
         if not filters:
             return False

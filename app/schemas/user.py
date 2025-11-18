@@ -1,5 +1,5 @@
 """
-Schemas (Pydantic models) para validação de dados de usuário
+Schemas (Pydantic models) para validação de dados de usuário — adaptados ao novo esquema oficial
 """
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
@@ -9,27 +9,34 @@ from datetime import datetime
 class UserBase(BaseModel):
     """Schema base de usuário"""
     email: EmailStr = Field(..., description="Email do usuário")
-    username: str = Field(..., min_length=3, max_length=50, description="Nome de usuário")
-    full_name: Optional[str] = Field(None, max_length=100, description="Nome completo")
+    name: str = Field(..., min_length=1, max_length=120, description="Nome")
 
 
 class UserCreate(UserBase):
     """Schema para criação de usuário"""
     password: str = Field(..., min_length=8, description="Senha do usuário")
+    nome_empresa: Optional[str] = Field(None, description="Nome da empresa")
+    cnpj: Optional[str] = Field(None, description="CNPJ da empresa")
+    occupation: Optional[str] = Field(None, description="Profissão/ocupação")
 
 
 class UserUpdate(BaseModel):
     """Schema para atualização de usuário"""
     email: Optional[EmailStr] = None
-    username: Optional[str] = Field(None, min_length=3, max_length=50)
-    full_name: Optional[str] = Field(None, max_length=100)
+    name: Optional[str] = Field(None, min_length=1, max_length=120)
     password: Optional[str] = Field(None, min_length=8)
+    nome_empresa: Optional[str] = None
+    cnpj: Optional[str] = None
+    occupation: Optional[str] = None
 
 
 class UserResponse(UserBase):
     """Schema para resposta de usuário (sem senha)"""
     id: int
     is_active: bool
+    nome_empresa: Optional[str] = None
+    cnpj: Optional[str] = None
+    occupation: Optional[str] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
     

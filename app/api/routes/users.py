@@ -25,10 +25,10 @@ async def create_user(
     Cria um novo usuário
     """
     # Verificar se o usuário já existe
-    if UserService.user_exists(db, email=user_data.email, username=user_data.username):
+    if UserService.user_exists(db, email=user_data.email, username=getattr(user_data, 'name', None)):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email ou username já registrado"
+            detail="Email ou name já registrado"
         )
     
     user = UserService.create_user(db, user_data)
@@ -91,7 +91,7 @@ async def update_user(
             detail="Usuário não encontrado"
         )
     
-    # Verificar se email ou username já existem (excluindo o usuário atual)
+    # Verificar se email ou name já existem (excluindo o usuário atual)
     if user_data.email and user_data.email != user.email:
         if UserService.get_user_by_email(db, user_data.email):
             raise HTTPException(
@@ -99,11 +99,11 @@ async def update_user(
                 detail="Email já registrado"
             )
     
-    if user_data.username and user_data.username != user.username:
-        if UserService.get_user_by_username(db, user_data.username):
+    if getattr(user_data, 'name', None) and user_data.name != user.name:
+        if UserService.get_user_by_username(db, user_data.name):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Username já registrado"
+                detail="Name já registrado"
             )
     
     updated_user = UserService.update_user(db, user_id, user_data)
