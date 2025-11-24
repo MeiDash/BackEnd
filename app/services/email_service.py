@@ -1,4 +1,4 @@
-# app/services/email.py
+
 import smtplib
 from email.mime.text import MIMEText
 from typing import List

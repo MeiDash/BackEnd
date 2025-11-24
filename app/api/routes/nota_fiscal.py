@@ -1,15 +1,14 @@
-# app/api/fiscal.py (Atualizando a rota de criação)
 from app.schemas.nota_fiscal import MetricaResponse, NotaFiscalCreate, NotaFiscalResponse
 from app.services.nota_fiscal_service import FiscalService
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.db import get_db
-from app.dependencies import get_current_active_user # IMPORTAR A NOVA DEPENDÊNCIA
-from app.models import User # Importar o modelo User
+from app.dependencies import get_current_active_user 
+from app.models import User 
 from sqlalchemy.orm import Session
-# ... definições do router e imports ...
+
 
 router = APIRouter(
-    prefix="/api/nfe",  # Usando 'nfe' (Nota Fiscal Eletrônica) ou 'notas'
+    prefix="/api/nfe",  
     tags=["Notas Fiscais"],
     responses={404: {"description": "Not found"}},
 )
@@ -19,7 +18,7 @@ router = APIRouter(
 async def create_nota_fiscal(
     nota_data: NotaFiscalCreate,
     db: Session = Depends(get_db),
-    # ADICIONADO: Dependência para exigir autenticação
+    
     current_user: User = Depends(get_current_active_user) 
 ):
     """
@@ -47,10 +46,10 @@ async def create_nota_fiscal(
 @router.get("/metrics", response_model=MetricaResponse)
 async def get_user_metrics(
     db: Session = Depends(get_db),
-    # ADICIONADO: Dependência para exigir autenticação
+    
     current_user: User = Depends(get_current_active_user)
 ):
     """
     Obtém as métricas atuais do MEI.
     """
-    # ... lógica de métricas usando current_user.id ...
+    

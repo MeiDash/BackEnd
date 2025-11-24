@@ -103,7 +103,7 @@ pip install -r requirements.txt
 cp .env.example .env
 # Edite o .env com suas credenciais PostgreSQL (ex.: DATABASE_URL=postgresql://postgres:sua_senha@localhost:5432/MeiDAsh)
 
-# Edite a senha do e-mail do .env com a senha de app fornecida
+# Edite a senha do e-mail do .env com a senha de app que vai ser fornecida.
 ```
 
 6. **Inicializar banco de dados (opcional, para dados de teste)**
