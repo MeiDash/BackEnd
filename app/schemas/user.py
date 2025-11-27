@@ -52,6 +52,16 @@ class UserUpdate(CamelModel):
     cnpj: Optional[str] = None
     occupation: Optional[str] = None
 
+    @field_validator('password')
+    @classmethod
+    def validate_update_password_length(cls, v):
+        # permitir None (campo não enviado)
+        if v is None:
+            return v
+        if len(v.encode('utf-8')) > 72:
+            raise ValueError('password cannot be longer than 72 bytes (utf-8 encoded)')
+        return v
+
 
 class UserResponse(UserBase):
     """Schema para resposta de usuário (sem senha)"""

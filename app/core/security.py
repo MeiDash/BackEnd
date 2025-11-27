@@ -4,21 +4,9 @@ Utilitários de segurança para autenticação e hashing de senhas
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+import bcrypt as bcrypt_lib
 from app.core.config import settings
 
-# Configuração do contexto de criptografia
-# Usar bcrypt em produção, mas plaintext para testes
-import os
-if os.getenv("TESTING"):
-    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-else:
-    pwd_context = CryptContext(
-        schemes=["bcrypt"],
-        deprecated="auto",
-        bcrypt__default_rounds=12,
-        bcrypt__ident="2b"  # Usar versão mais recente do bcrypt
-    )
 
 
 def hash_password(password: str) -> str:
@@ -31,7 +19,15 @@ def hash_password(password: str) -> str:
     Returns:
         Senha criptografada
     """
-    return pwd_context.hash(password)
+    # bcrypt limita a 72 bytes, truncar se necessário
+    password_bytes = password.encode('utf-8')
+    if len(password_bytes) > 72:
+        password_bytes = password_bytes[:72]
+    
+    # Gerar salt e hash
+    salt = bcrypt_lib.gensalt(rounds=12)
+    hashed = bcrypt_lib.hashpw(password_bytes, salt)
+    return hashed.decode('utf-8')
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -45,7 +41,14 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     Returns:
         True se as senhas correspondem, False caso contrário
     """
-    return pwd_context.verify(plain_password, hashed_password)
+    # Garantir comportamento consistente com `hash_password`:
+    # bcrypt tem limite de 72 bytes — truncar antes de verificar.
+    plain_bytes = plain_password.encode("utf-8")
+    if len(plain_bytes) > 72:
+        plain_bytes = plain_bytes[:72]
+    
+    hashed_bytes = hashed_password.encode('utf-8')
+    return bcrypt_lib.checkpw(plain_bytes, hashed_bytes)
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:

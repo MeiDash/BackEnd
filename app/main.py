@@ -2,6 +2,9 @@
 Aplicação principal do FastAPI
 """
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from starlette.status import HTTP_422_UNPROCESSABLE_ENTITY
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.api import api_router
@@ -58,3 +61,32 @@ async def global_exception_handler(request, exc):
         "message": "Erro interno do servidor",
         "detail": str(exc) if settings.ENVIRONMENT == "development" else None,
     }
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc: RequestValidationError):
+    """Transforma erros de validação em mensagens mais amigáveis.
+
+    Especificamente detecta validações relacionadas ao tamanho da senha
+    (mais de 72 bytes) e retorna uma mensagem clara para o cliente.
+    """
+    errors = exc.errors()
+
+    # Procurar por erro relacionado ao campo 'password' com indicação de 72 bytes
+    for err in errors:
+        msg = err.get("msg", "")
+        loc = err.get("loc", [])
+        if "password" in str(loc).lower() and "72 bytes" in str(msg).lower():
+            content = {
+                "detail": [
+                    {
+                        "loc": loc,
+                        "msg": "A senha é muito longa: limite de 72 bytes (utf-8). Use uma senha mais curta.",
+                        "type": "value_error.password_too_long",
+                    }
+                ]
+            }
+            return JSONResponse(status_code=HTTP_422_UNPROCESSABLE_ENTITY, content=content)
+
+    # Caso padrão: retornar lista de erros como JSON
+    return JSONResponse(status_code=HTTP_422_UNPROCESSABLE_ENTITY, content={"detail": errors})
