@@ -12,6 +12,7 @@ from app.core.config import settings
 # limiares de alerta em percentual. 
 ALERT_THRESHOLDS: List[float] = [0.50, 0.70, 0.80, 0.90, 1.00] 
 
+
 logging.basicConfig(level=logging.INFO)
 
 class EmailService:
