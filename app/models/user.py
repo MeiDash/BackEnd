@@ -4,7 +4,7 @@ Modelo de usuário no banco de dados
 from sqlalchemy import Column, Integer, String, Boolean, DateTime
 from sqlalchemy.sql import func
 from app.db import Base
-
+from sqlalchemy.orm import relationship
 
 class User(Base):
     """Modelo de usuário"""
@@ -23,6 +23,12 @@ class User(Base):
     is_active = Column('ativo', Boolean, default=True, server_default='1', index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    notas_fiscais = relationship("NotaFiscal", back_populates="user")
+    metrica = relationship(
+        "Metrica", 
+        back_populates="user", # Deve corresponder ao nome do relacionamento em Metrica
+        uselist=False # Indica relacionamento Um-para-Um
+    )
     
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email}, name={self.name})>"

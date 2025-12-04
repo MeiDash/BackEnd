@@ -11,6 +11,13 @@ from app.schemas.user import (
     TokenData,
 )
 
+from app.schemas.nota_fiscal import (
+    NotaFiscalBase,
+    NotaFiscalCreate,
+    NotaFiscalResponse,
+    MetricaResponse,
+)
+
 __all__ = [
     "UserBase",
     "UserCreate",
@@ -19,4 +26,9 @@ __all__ = [
     "UserLogin",
     "Token",
     "TokenData",
+    
+    "NotaFiscalBase",
+    "NotaFiscalCreate",
+    "NotaFiscalResponse",
+    "MetricaResponse",
 ]

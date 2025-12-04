@@ -24,6 +24,13 @@ class Settings(BaseSettings):
     # CORS
     ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:5173"
     
+    # CONFIGURAÇÕES PARA E-MAIL
+    SMTP_SERVER: str 
+    SMTP_PORT: int
+    SMTP_USERNAME: str
+    SMTP_PASSWORD: str
+    EMAIL_SENDER: str
+    
     class Config:
         env_file = ".env"
         case_sensitive = True
