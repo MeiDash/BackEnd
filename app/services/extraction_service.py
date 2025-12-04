@@ -18,6 +18,7 @@ class ExtractionService:
             messages = [
                 {"role": "system", "content": PROMPT}
             ]
+            
             for example in EXAMPLES:
                 messages.append(example)
 
