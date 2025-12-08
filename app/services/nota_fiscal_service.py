@@ -6,7 +6,7 @@ from app.models.nota_fiscal import NotaFiscal, Metrica
 from app.models import User # Importa o modelo User
 from app.schemas.nota_fiscal import NotaFiscalCreate
 from app.services.email_service import EmailService, ALERT_THRESHOLDS
-from typing import Optional
+from typing import List
 import logging
 from datetime import datetime 
 
@@ -98,3 +98,10 @@ class FiscalService:
         FiscalService.check_limit_and_notify(db, metrica, user)
         
         return db_nota
+
+    @staticmethod
+    def get_notas_fiscais_by_user(db: Session, user_id: int) -> List[NotaFiscal]:
+        """
+        Retorna todas as notas fiscais do usuário.
+        """
+        return db.query(NotaFiscal).filter(NotaFiscal.user_id == user_id).all()

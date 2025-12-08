@@ -6,6 +6,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.status import HTTP_422_UNPROCESSABLE_ENTITY
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
 from app.api import api_router
 from app.db import Base, engine
@@ -19,6 +20,9 @@ app = FastAPI(
     version=settings.APP_VERSION,
     description="Backend API para gerenciamento de usuários",
 )
+
+# Montar diretório de uploads
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # Configurar CORS
 app.add_middleware(
