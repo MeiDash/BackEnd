@@ -21,6 +21,14 @@ class NotaFiscalCreate(NotaFiscalBase):
     pass
 
 
+class NotaFiscalUpdate(CamelModel):
+    """Schema para atualização de Nota Fiscal"""
+    valor_total: Optional[float] = Field(None, gt=0)
+    data: Optional[date] = None
+    empresa: Optional[str] = Field(None, min_length=1, max_length=255)
+    url: Optional[str] = Field(None, min_length=1)
+
+
 class NotaFiscalResponse(NotaFiscalBase):
     """Schema para resposta de Nota Fiscal (dados de saída)"""
     id: int

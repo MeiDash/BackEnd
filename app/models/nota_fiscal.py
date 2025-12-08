@@ -23,7 +23,7 @@ class NotaFiscal(Base):
     user = relationship("User", back_populates="notas_fiscais")
     
     def __repr__(self):
-        return f"<NotaFiscal(id={self.id}, user_id={self.user_id}, valor={self.valor})>"
+        return f"<NotaFiscal(id={self.id}, user_id={self.user_id}, valor_total={self.valor_total})>"
 
 
 class Metrica(Base):

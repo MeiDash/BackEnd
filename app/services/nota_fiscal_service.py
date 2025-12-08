@@ -4,16 +4,49 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.models.nota_fiscal import NotaFiscal, Metrica
 from app.models import User # Importa o modelo User
-from app.schemas.nota_fiscal import NotaFiscalCreate
+from app.schemas.nota_fiscal import NotaFiscalCreate, NotaFiscalUpdate
 from app.services.email_service import EmailService, ALERT_THRESHOLDS
-from typing import Optional
+from typing import List, Optional
 import logging
 from datetime import datetime 
+from fastapi import HTTPException
 
 # Define a precisão dos limiares para comparação
 COMPARISON_PRECISION = 0.0001 
 
 class FiscalService:
+    
+    """Serviço para operações de Nota Fiscal"""
+    
+    @staticmethod
+    def get_nota_fiscal_by_id(
+        db: Session, 
+        nota_id: int, 
+        user_id: int
+    ) -> Optional[NotaFiscal]:
+        """Obtém nota fiscal por ID (apenas do usuário autenticado)"""
+        return db.query(NotaFiscal).filter(
+            NotaFiscal.id == nota_id,
+            NotaFiscal.user_id == user_id
+        ).first()
+    
+    @staticmethod
+    def get_all_notas_fiscais(
+        db: Session,
+        user_id: int,
+        skip: int = 0,
+        limit: int = 100
+    ) -> List[NotaFiscal]:
+        """Obtém todas as notas fiscais do usuário com paginação"""
+        return db.query(NotaFiscal).filter(
+            NotaFiscal.user_id == user_id
+        ).order_by(
+            NotaFiscal.data.desc()
+        ).offset(skip).limit(limit).all()
+    
+    
+    
+    
     @staticmethod
     def calculate_and_update_metrics(db: Session, user_id: int):
         """
@@ -36,7 +69,12 @@ class FiscalService:
         # busca/cria a metrica
         metrica: Optional[Metrica] = db.query(Metrica).filter(Metrica.user_id == user_id).first()
         if not metrica:
-            metrica = Metrica(user_id=user_id)
+            metrica = Metrica(
+                user_id=user_id,
+                limite=0,
+                total_gasto=0.0,
+                ultimo_alerta_percentual=0.0
+            )
             db.add(metrica)
         
         # Lógica de RESET ANUAL do alerta (Se o faturamento deste ano for 0 e antes era > 0, reseta o alerta)
@@ -54,6 +92,12 @@ class FiscalService:
 
     @staticmethod
     def check_limit_and_notify(db: Session, metrica: Metrica, user: User):
+        if metrica.limite is None or metrica.limite <= 0:
+            return
+        
+        if metrica.ultimo_alerta_percentual is None:
+            metrica.ultimo_alerta_percentual = 0.0
+        
         limite = metrica.limite
         faturamento = metrica.total_gasto
         
@@ -79,7 +123,7 @@ class FiscalService:
     def create_nota_fiscal(db: Session, user_id: int, nota_data: NotaFiscalCreate) -> NotaFiscal:
         user = db.query(User).filter(User.id == user_id).first()
         if not user or not user.is_active:
-             raise Exception("Usuário não encontrado ou inativo.")
+             raise HTTPException(status_code=400, detail="Usuário não encontrado ou inativo.")
              
         db_nota = NotaFiscal(
             user_id=user_id,
@@ -98,3 +142,56 @@ class FiscalService:
         FiscalService.check_limit_and_notify(db, metrica, user)
         
         return db_nota
+    
+    @staticmethod
+    def update_nota_fiscal(
+        db: Session,
+        nota_id: int,
+        user_id: int,
+        nota_data: NotaFiscalUpdate
+    ) -> Optional[NotaFiscal]:
+        """Atualiza uma nota fiscal existente"""
+        db_nota = db.query(NotaFiscal).filter(
+            NotaFiscal.id == nota_id,
+            NotaFiscal.user_id == user_id
+        ).first()
+        
+        if not db_nota:
+            return None
+        
+        update_data = nota_data.model_dump(exclude_unset=True)
+        
+        for field, value in update_data.items():
+            setattr(db_nota, field, value)
+        
+        db.commit()
+        db.refresh(db_nota)
+        
+        # Recalcula métricas após atualização
+        user = db.query(User).filter(User.id == user_id).first()
+        metrica = FiscalService.calculate_and_update_metrics(db, user_id)
+        FiscalService.check_limit_and_notify(db, metrica, user)
+        
+        return db_nota
+    
+    @staticmethod
+    def delete_nota_fiscal(db: Session, nota_id: int, user_id: int) -> bool:
+        """Deleta uma nota fiscal (hard delete)"""
+        db_nota = db.query(NotaFiscal).filter(
+            NotaFiscal.id == nota_id,
+            NotaFiscal.user_id == user_id
+        ).first()
+        
+        if not db_nota:
+            return False
+        
+        db.delete(db_nota)
+        db.commit()
+        
+        # Recalcula métricas após deleção
+        user = db.query(User).filter(User.id == user_id).first()
+        if user:
+            metrica = FiscalService.calculate_and_update_metrics(db, user_id)
+            FiscalService.check_limit_and_notify(db, metrica, user)
+        
+        return True
