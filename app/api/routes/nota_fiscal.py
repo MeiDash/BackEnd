@@ -56,7 +56,7 @@ async def get_notas_fiscais(
     return notas
 
 
-@router.get("/metrics", response_model=MetricaResponse)
+@router.get("/metrics", response_model=dict)
 async def get_user_metrics(
     db: Session = Depends(get_db),
     
