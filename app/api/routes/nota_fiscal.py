@@ -1,3 +1,4 @@
+from typing import List
 from app.schemas.nota_fiscal import MetricaResponse, NotaFiscalCreate, NotaFiscalResponse
 from app.services.nota_fiscal_service import FiscalService
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -40,10 +41,22 @@ async def create_nota_fiscal(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erro interno do servidor: {str(e)}"
-        )
+        ) 
 
 
-@router.get("/metrics", response_model=MetricaResponse)
+@router.get("", response_model=List[NotaFiscalResponse])
+async def get_notas_fiscais(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Obtém todas as notas fiscais do usuário autenticado.
+    """
+    notas = FiscalService.get_notas_fiscais_by_user(db, current_user.id)
+    return notas
+
+
+@router.get("/metrics", response_model=dict)
 async def get_user_metrics(
     db: Session = Depends(get_db),
     
