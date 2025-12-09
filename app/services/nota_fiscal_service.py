@@ -4,8 +4,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.models.nota_fiscal import NotaFiscal, Metrica
 from app.models import User # Importa o modelo User
-from app.schemas.nota_fiscal import NotaFiscalCreate, NotaFiscalUpdate
+from app.schemas.nota_fiscal import NotaFiscalCreate, MetricaResponse, NotaFiscalUpdate
 from app.services.email_service import EmailService, ALERT_THRESHOLDS
+from typing import List
 from typing import List, Optional
 import logging
 from datetime import datetime 
@@ -76,6 +77,16 @@ class FiscalService:
                 ultimo_alerta_percentual=0.0
             )
             db.add(metrica)
+            # Set defaults explicitly
+            metrica.total_gasto = 0.0
+            metrica.limite = 81000.00
+            metrica.ultimo_alerta_percentual = 0.0
+        else:
+            # Ensure defaults for existing records
+            if metrica.limite is None:
+                metrica.limite = 81000.00
+            if metrica.ultimo_alerta_percentual is None:
+                metrica.ultimo_alerta_percentual = 0.0
         
         # Lógica de RESET ANUAL do alerta (Se o faturamento deste ano for 0 e antes era > 0, reseta o alerta)
         if faturamento_total == 0 and metrica.total_gasto > 0:
@@ -142,6 +153,28 @@ class FiscalService:
         FiscalService.check_limit_and_notify(db, metrica, user)
         
         return db_nota
+
+    @staticmethod
+    def get_notas_fiscais_by_user(db: Session, user_id: int) -> List[NotaFiscal]:
+        """
+        Retorna todas as notas fiscais do usuário.
+        """
+        return db.query(NotaFiscal).filter(NotaFiscal.user_id == user_id).all()
+
+    @staticmethod
+    def get_user_metrics(db: Session, user_id: int):
+        """
+        Retorna as métricas do usuário, calculando se necessário.
+        """
+        metrica = FiscalService.calculate_and_update_metrics(db, user_id)
+        percentual_atingido = (metrica.total_gasto / metrica.limite) * 100 if metrica.limite and metrica.limite > 0 else 0.0
+        return MetricaResponse(
+            user_id=metrica.user_id,
+            total_gasto=metrica.total_gasto,
+            limite=metrica.limite,
+            updated_at=metrica.updated_at,
+            percentual_atingido=percentual_atingido
+        )
     
     @staticmethod
     def update_nota_fiscal(

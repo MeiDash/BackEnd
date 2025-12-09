@@ -2,7 +2,7 @@
 Inicialização do módulo API
 """
 from fastapi import APIRouter
-from app.api.routes import auth_router, users_router, fiscal_router 
+from app.api.routes import auth_router, users_router, fiscal_router, upload_router 
 
 api_router = APIRouter()
 
@@ -10,5 +10,6 @@ api_router = APIRouter()
 api_router.include_router(auth_router)
 api_router.include_router(users_router)
 api_router.include_router(fiscal_router) 
+api_router.include_router(upload_router)
 
 __all__ = ["api_router"]
