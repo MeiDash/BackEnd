@@ -20,8 +20,8 @@ async def extract_total_value(
 
         content = await image.read()
     
-        result = ExtractionService.extract_total_value(content)
-        return {"result": result}
+        result = ExtractionService.extract(content)
+        return result
 
     except Exception as err:
         raise HTTPException(status_code=500, detail=str(err))

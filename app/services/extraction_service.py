@@ -1,6 +1,9 @@
 import ollama
 from app.services.prompt import PROMPT
 from app.services.examples import EXAMPLES
+from app.services.ocr.doctr_extraction import DoctrOCR
+from app.services.llms.llm_struct import LLMStruct
+from app.services.llms.llm_extraction import LLMExtraction
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 import tempfile
@@ -29,15 +32,23 @@ class ExtractionService:
                         "images": [tmp_path]
                 }
             )
-            print(messages)
-            print(f"chegou aqui {tmp_path}")
             response = ollama.chat(
                 model="llama3.2-vision:latest",  
                 messages=messages
             )
-            print(f"response {response}")
             json_str = response["message"]["content"]
             return json.dumps(json_str)
+    
+    def extract(image_bytes: bytes):
+        doctr: BaseOCR = DoctrOCR()
+        llm_extraction = LLMExtraction()
+        llm_struct = LLMStruct()
+        texto = doctr.extrair_texto(image_bytes)
+        extraction = llm_extraction.process(texto)
+        result = llm_struct.process(extraction)
+        return result
+
+
 
 
 
