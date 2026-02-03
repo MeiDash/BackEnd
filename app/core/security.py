@@ -11,13 +11,13 @@ from app.core.config import settings
 # Usar bcrypt em produção, mas plaintext para testes
 import os
 if os.getenv("TESTING"):
-    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+    pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 else:
     pwd_context = CryptContext(
-        schemes=["bcrypt"],
+        schemes=["argon2"],
         deprecated="auto",
-        bcrypt__default_rounds=12,
-        bcrypt__ident="2b"  # Usar versão mais recente do bcrypt
+        # bcrypt__default_rounds=12,
+        # bcrypt__ident="2b"  # Usar versão mais recente do bcrypt
     )
 
 
