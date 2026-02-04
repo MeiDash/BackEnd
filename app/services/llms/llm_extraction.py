@@ -2,7 +2,7 @@ import ollama
 
 class LLMExtraction:
     def __init__(self):
-        self.prompt = "Você é um extrator de informações. Extraia o valor total e o nome da empresa da nota."
+        self.prompt = "Você é um extrator de informações. Extraia da nota o valor total, nome da empresa fornecedora, a data e o cnpj."
 
     def process(self, texto: str) -> str:
         resp = ollama.chat(
