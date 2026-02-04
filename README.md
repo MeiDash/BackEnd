@@ -290,3 +290,18 @@ Valide os dados enviados de acordo com os schemas em `app/schemas/`.
 ### CORS error no frontend
 
 Adicione a URL do seu frontend em `ALLOWED_ORIGINS` no `.env`.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+& "C:/Users/kevin/Documents/Programação/Meus Projetos/BackEnd/.venv/Scripts/python.exe" run.py

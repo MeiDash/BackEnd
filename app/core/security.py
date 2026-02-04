@@ -10,15 +10,10 @@ from app.core.config import settings
 # Configuração do contexto de criptografia
 # Usar bcrypt em produção, mas plaintext para testes
 import os
-if os.getenv("TESTING"):
-    pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
-else:
-    pwd_context = CryptContext(
-        schemes=["argon2"],
-        deprecated="auto",
-        # bcrypt__default_rounds=12,
-        # bcrypt__ident="2b"  # Usar versão mais recente do bcrypt
-    )
+pwd_context = CryptContext(
+    schemes=["pbkdf2_sha256", "argon2", "bcrypt", "scrypt"],
+    deprecated="auto",
+)
 
 
 def hash_password(password: str) -> str:
@@ -45,7 +40,11 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     Returns:
         True se as senhas correspondem, False caso contrário
     """
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        return pwd_context.verify(plain_password, hashed_password)
+    except Exception:
+        # If hash can't be identified, return False
+        return False
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:

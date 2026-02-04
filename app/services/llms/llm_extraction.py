@@ -6,7 +6,7 @@ class LLMExtraction:
 
     def process(self, texto: str) -> str:
         resp = ollama.chat(
-            model="llama3.2-vision:latest",
+            model="gemma3:1B",
             messages=[
                 {"role": "system", "content": self.prompt},
                 {"role": "user", "content": texto}

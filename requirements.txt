@@ -12,3 +12,5 @@ cors==1.0.1
 httpx==0.28.1
 pytest==8.3.4
 pytest-asyncio==0.25.1
+python-doctr[torch]==0.7.0
+ollama==0.3.3

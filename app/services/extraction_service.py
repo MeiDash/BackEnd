@@ -33,7 +33,7 @@ class ExtractionService:
                 }
             )
             response = ollama.chat(
-                model="llama3.2-vision:latest",  
+                model="gemma3:1B",  
                 messages=messages
             )
             json_str = response["message"]["content"]
