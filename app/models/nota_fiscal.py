@@ -44,4 +44,4 @@ class Metrica(Base):
     user = relationship("User", back_populates="metrica")
     
     def __repr__(self):
-        return f"<Metrica(user_id={self.user_id}, faturamento_total={self.faturamento_total})>"
+        return f"<Metrica(user_id={self.user_id}, faturamento_total={self.total_gasto})>"

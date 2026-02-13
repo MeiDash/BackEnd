@@ -1,4 +1,5 @@
-from typing import List
+from datetime import date
+from typing import List, Optional
 from app.schemas.nota_fiscal import MetricaResponse, NotaFiscalCreate, NotaFiscalResponse, NotaFiscalUpdate
 from app.services.nota_fiscal_service import FiscalService
 from app.utils.response import PaginationParams
@@ -45,25 +46,94 @@ async def create_nota_fiscal(
         ) 
 
 
-@router.get("", response_model=list[NotaFiscalResponse], response_model_by_alias=False)
+@router.get("", response_model=dict)
 async def get_notas_fiscais(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=1000),
+    skip: int = Query(0, ge=0, description="Número de registros para pular"),
+    limit: int = Query(100, ge=1, le=1000, description="Número máximo de registros a retornar"),
+    data_inicio: Optional[date] = Query(None, description="Data inicial (formato: YYYY-MM-DD)"),
+    data_fim: Optional[date] = Query(None, description="Data final (formato: YYYY-MM-DD)"),
+    empresa: Optional[str] = Query(None, description="Nome ou parte do nome da empresa"),
+    valor_min: Optional[float] = Query(None, ge=0, description="Valor mínimo da nota fiscal"),
+    valor_max: Optional[float] = Query(None, ge=0, description="Valor máximo da nota fiscal"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
     """
-    Obtém lista de notas fiscais do usuário autenticado com paginação
+    Obtém lista de notas fiscais do usuário autenticado com paginação e filtros opcionais.
+    
+    **Filtros disponíveis:**
+    - **data_inicio**: Filtra notas a partir desta data (inclusivo)
+    - **data_fim**: Filtra notas até esta data (inclusivo)
+    - **empresa**: Busca parcial no nome da empresa (case-insensitive)
+    - **valor_min**: Valor mínimo da nota fiscal
+    - **valor_max**: Valor máximo da nota fiscal
+    
+    **Paginação:**
+    - **skip**: Número de registros para pular
+    - **limit**: Número máximo de registros a retornar (máx: 1000)
+    
+    **Retorno:**
+    - **data**: Lista de notas fiscais
+    - **total**: Total de registros que atendem aos filtros
+    - **skip**: Offset aplicado
+    - **limit**: Limite aplicado
     """
-    pagination = PaginationParams(skip=skip, limit=limit)
+    # Validar intervalo de datas
+    if data_inicio and data_fim and data_inicio > data_fim:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="data_inicio não pode ser maior que data_fim"
+        )
+    
+    # Validar intervalo de valores
+    if valor_min is not None and valor_max is not None and valor_min > valor_max:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="valor_min não pode ser maior que valor_max"
+        )
+    
+    # Buscar notas com filtros
     notas = FiscalService.get_all_notas_fiscais(
         db,
         user_id=current_user.id,
-        skip=pagination.get_skip(),
-        limit=pagination.get_limit()
+        skip=skip,
+        limit=limit,
+        data_inicio=data_inicio,
+        data_fim=data_fim,
+        empresa=empresa,
+        valor_min=valor_min,
+        valor_max=valor_max
     )
-    return notas
-
+    
+    # Contar total de registros (para paginação no frontend)
+    total = FiscalService.count_notas_fiscais(
+        db,
+        user_id=current_user.id,
+        data_inicio=data_inicio,
+        data_fim=data_fim,
+        empresa=empresa,
+        valor_min=valor_min,
+        valor_max=valor_max
+    )
+    
+    return {
+        "data": [NotaFiscalResponse.model_validate(nota) for nota in notas],
+        "total": total,
+        "skip": skip,
+        "limit": limit,
+        "has_next": (skip + limit) < total,
+        "has_previous": skip > 0
+    }
+    
+@router.get("/metrics", response_model=MetricaResponse)
+async def get_user_metrics(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Obtém as métricas atuais do MEI.
+    """
+    return FiscalService.get_user_metrics(db, current_user.id)
 
 @router.get("/{nota_id}", response_model=NotaFiscalResponse, response_model_by_alias=False)
 async def get_nota_fiscal(
@@ -142,25 +212,3 @@ async def delete_nota_fiscal(
     return None
 
 
-@router.get("", response_model=List[NotaFiscalResponse])
-async def get_notas_fiscais(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
-):
-    """
-    Obtém todas as notas fiscais do usuário autenticado.
-    """
-    notas = FiscalService.get_notas_fiscais_by_user(db, current_user.id)
-    return notas
-
-
-@router.get("/metrics", response_model=dict)
-async def get_user_metrics(
-    db: Session = Depends(get_db),
-    
-    current_user: User = Depends(get_current_active_user)
-):
-    """
-    Obtém as métricas atuais do MEI.
-    """
-    

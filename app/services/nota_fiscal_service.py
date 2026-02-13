@@ -9,7 +9,7 @@ from app.services.email_service import EmailService, ALERT_THRESHOLDS
 from typing import List
 from typing import List, Optional
 import logging
-from datetime import datetime 
+from datetime import date, datetime 
 from fastapi import HTTPException
 
 # Define a precisão dos limiares para comparação
@@ -36,14 +36,97 @@ class FiscalService:
         db: Session,
         user_id: int,
         skip: int = 0,
-        limit: int = 100
+        limit: int = 100,
+        data_inicio: Optional[date] = None,
+        data_fim: Optional[date] = None,
+        empresa: Optional[str] = None,
+        valor_min: Optional[float] = None,
+        valor_max: Optional[float] = None
     ) -> List[NotaFiscal]:
-        """Obtém todas as notas fiscais do usuário com paginação"""
-        return db.query(NotaFiscal).filter(
+        """
+        Obtém todas as notas fiscais do usuário com paginação e filtros opcionais
+        
+        Args:
+            db: Sessão do banco de dados
+            user_id: ID do usuário
+            skip: Quantidade de registros para pular (paginação)
+            limit: Quantidade máxima de registros a retornar
+            data_inicio: Data inicial do filtro (inclusivo)
+            data_fim: Data final do filtro (inclusivo)
+            empresa: Nome ou parte do nome da empresa (busca parcial, case-insensitive)
+            valor_min: Valor mínimo da nota fiscal
+            valor_max: Valor máximo da nota fiscal
+        
+        Returns:
+            Lista de NotaFiscal filtrada e paginada
+        """
+        # Query base
+        query = db.query(NotaFiscal).filter(
             NotaFiscal.user_id == user_id
-        ).order_by(
+        )
+        
+        # Aplicar filtros opcionais
+        if data_inicio:
+            query = query.filter(NotaFiscal.data >= data_inicio)
+        
+        if data_fim:
+            # Incluir todo o dia final (até 23:59:59)
+            from datetime import datetime, time
+            data_fim_completa = datetime.combine(data_fim, time(23, 59, 59))
+            query = query.filter(NotaFiscal.data <= data_fim_completa)
+        
+        if empresa:
+            # Busca parcial case-insensitive 
+            query = query.filter(NotaFiscal.empresa.ilike(f"%{empresa}%"))
+        
+        if valor_min is not None:
+            query = query.filter(NotaFiscal.valor_total >= valor_min)
+        
+        if valor_max is not None:
+            query = query.filter(NotaFiscal.valor_total <= valor_max)
+        
+        # Ordenar por data decrescente e aplicar paginação
+        return query.order_by(
             NotaFiscal.data.desc()
         ).offset(skip).limit(limit).all()
+
+
+    @staticmethod
+    def count_notas_fiscais(
+        db: Session,
+        user_id: int,
+        data_inicio: Optional[date] = None,
+        data_fim: Optional[date] = None,
+        empresa: Optional[str] = None,
+        valor_min: Optional[float] = None,
+        valor_max: Optional[float] = None
+    ) -> int:
+        """
+        Conta o total de notas fiscais que atendem aos filtros
+        Útil para implementar paginação no frontend
+        """
+        query = db.query(func.count(NotaFiscal.id)).filter(
+            NotaFiscal.user_id == user_id
+        )
+        
+        if data_inicio:
+            query = query.filter(NotaFiscal.data >= data_inicio)
+        
+        if data_fim:
+            from datetime import datetime, time
+            data_fim_completa = datetime.combine(data_fim, time(23, 59, 59))
+            query = query.filter(NotaFiscal.data <= data_fim_completa)
+        
+        if empresa:
+            query = query.filter(NotaFiscal.empresa.ilike(f"%{empresa}%"))
+        
+        if valor_min is not None:
+            query = query.filter(NotaFiscal.valor_total >= valor_min)
+        
+        if valor_max is not None:
+            query = query.filter(NotaFiscal.valor_total <= valor_max)
+        
+        return query.scalar()
     
     
     
@@ -77,12 +160,12 @@ class FiscalService:
                 ultimo_alerta_percentual=0.0
             )
             db.add(metrica)
-            # Set defaults explicitly
+            
             metrica.total_gasto = 0.0
             metrica.limite = 81000.00
             metrica.ultimo_alerta_percentual = 0.0
         else:
-            # Ensure defaults for existing records
+            
             if metrica.limite is None:
                 metrica.limite = 81000.00
             if metrica.ultimo_alerta_percentual is None:

@@ -12,10 +12,10 @@ from app.schemas.user import (
 )
 
 from app.schemas.nota_fiscal import (
-    NotaFiscalBase,
     NotaFiscalCreate,
     NotaFiscalResponse,
     MetricaResponse,
+    NotaFiscalFilter
 )
 
 __all__ = [
@@ -27,8 +27,8 @@ __all__ = [
     "Token",
     "TokenData",
     
-    "NotaFiscalBase",
     "NotaFiscalCreate",
+    "NotaFiscalFilter"
     "NotaFiscalResponse",
     "MetricaResponse",
 ]

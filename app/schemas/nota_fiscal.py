@@ -1,53 +1,66 @@
-# app/schemas/fiscal.py
-from pydantic import Field
+from pydantic import BaseModel, field_validator
+from datetime import date, datetime
 from typing import Optional
-from datetime import datetime, date
 
-# Reutilizando seu CamelModel 
-from app.schemas.base import CamelModel
-
-
-class NotaFiscalBase(CamelModel):
-    """Schema base para Nota Fiscal"""
+class NotaFiscalCreate(BaseModel):
+    valor_total: float
+    data: date
+    empresa: str
+    url: str
     
-    valor_total: float = Field(..., gt=0, description="Valor total da nota fiscal que conta para o faturamento.")
-    data: date = Field(..., description="Data da emissão ou registro da nota")
-    empresa: str = Field(..., description="Nome da empresa cliente/receptora da nota")
-    url: str = Field(..., description="URL ou caminho para o arquivo da nota fiscal")
+    @field_validator('valor_total')
+    @classmethod
+    def validar_valor(cls, v):
+        if v <= 0:
+            raise ValueError('Valor deve ser maior que zero')
+        return v
 
-
-class NotaFiscalCreate(NotaFiscalBase):
-    """Schema para criação de Nota Fiscal (dados de entrada)"""
-    pass
-
-
-class NotaFiscalUpdate(CamelModel):
-    """Schema para atualização de Nota Fiscal"""
-    valor_total: Optional[float] = Field(None, gt=0)
+class NotaFiscalUpdate(BaseModel):
+    valor_total: Optional[float] = None
     data: Optional[date] = None
-    empresa: Optional[str] = Field(None, min_length=1, max_length=255)
-    url: Optional[str] = Field(None, min_length=1)
+    empresa: Optional[str] = None
+    url: Optional[str] = None
+    
+    @field_validator('valor_total')
+    @classmethod
+    def validar_valor(cls, v):
+        if v is not None and v <= 0:
+            raise ValueError('Valor deve ser maior que zero')
+        return v
 
-
-class NotaFiscalResponse(NotaFiscalBase):
-    """Schema para resposta de Nota Fiscal (dados de saída)"""
+class NotaFiscalResponse(BaseModel):
     id: int
     user_id: int
+    valor_total: float
+    data: datetime
+    empresa: str
+    url: str
     created_at: datetime
+    
+    class Config:
+        from_attributes = True
 
-    model_config = {
-        "from_attributes": True,
-    }
+class NotaFiscalFilter(BaseModel):
+    """Schema para filtros de listagem"""
+    data_inicio: Optional[date] = None
+    data_fim: Optional[date] = None
+    empresa: Optional[str] = None
+    valor_min: Optional[float] = None
+    valor_max: Optional[float] = None
+    
+    @field_validator('valor_min', 'valor_max')
+    @classmethod
+    def validar_valores(cls, v):
+        if v is not None and v < 0:
+            raise ValueError('Valores não podem ser negativos')
+        return v
 
-
-class MetricaResponse(CamelModel):
-    """Schema para resposta das Métricas do MEI"""
+class MetricaResponse(BaseModel):
     user_id: int
-    total_gasto: float = Field(..., description="Faturamento total acumulado que é comparado ao limite de R$ 81k.")
-    limite: float = Field(..., description="Limite anual de faturamento (Ex: 81000.00)")
+    total_gasto: float
+    limite: float
+    percentual_atingido: float
     updated_at: Optional[datetime] = None
-    percentual_atingido: float = Field(..., description="Percentual do limite anual atingido")
-
-    model_config = {
-        "from_attributes": True,
-    }
+    
+    class Config:
+        from_attributes = True
