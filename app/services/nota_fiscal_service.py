@@ -1,9 +1,10 @@
 
 
+from time import time
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.models.nota_fiscal import NotaFiscal, Metrica
-from app.models import User # Importa o modelo User
+from app.models import User 
 from app.schemas.nota_fiscal import NotaFiscalCreate, MetricaResponse, NotaFiscalUpdate
 from app.services.email_service import EmailService, ALERT_THRESHOLDS
 from typing import List
@@ -41,42 +42,22 @@ class FiscalService:
         data_fim: Optional[date] = None,
         empresa: Optional[str] = None,
         valor_min: Optional[float] = None,
-        valor_max: Optional[float] = None
+        valor_max: Optional[float] = None,
+        categoria: Optional[str] = None 
     ) -> List[NotaFiscal]:
-        """
-        Obtém todas as notas fiscais do usuário com paginação e filtros opcionais
-        
-        Args:
-            db: Sessão do banco de dados
-            user_id: ID do usuário
-            skip: Quantidade de registros para pular (paginação)
-            limit: Quantidade máxima de registros a retornar
-            data_inicio: Data inicial do filtro (inclusivo)
-            data_fim: Data final do filtro (inclusivo)
-            empresa: Nome ou parte do nome da empresa (busca parcial, case-insensitive)
-            valor_min: Valor mínimo da nota fiscal
-            valor_max: Valor máximo da nota fiscal
-        
-        Returns:
-            Lista de NotaFiscal filtrada e paginada
-        """
-        # Query base
+        """Obtém todas as notas fiscais do usuário com paginação e filtros opcionais"""
         query = db.query(NotaFiscal).filter(
             NotaFiscal.user_id == user_id
         )
         
-        # Aplicar filtros opcionais
         if data_inicio:
             query = query.filter(NotaFiscal.data >= data_inicio)
         
         if data_fim:
-            # Incluir todo o dia final (até 23:59:59)
-            from datetime import datetime, time
             data_fim_completa = datetime.combine(data_fim, time(23, 59, 59))
             query = query.filter(NotaFiscal.data <= data_fim_completa)
         
         if empresa:
-            # Busca parcial case-insensitive 
             query = query.filter(NotaFiscal.empresa.ilike(f"%{empresa}%"))
         
         if valor_min is not None:
@@ -85,7 +66,9 @@ class FiscalService:
         if valor_max is not None:
             query = query.filter(NotaFiscal.valor_total <= valor_max)
         
-        # Ordenar por data decrescente e aplicar paginação
+        if categoria:
+            query = query.filter(NotaFiscal.categoria == categoria)
+        
         return query.order_by(
             NotaFiscal.data.desc()
         ).offset(skip).limit(limit).all()
@@ -99,12 +82,10 @@ class FiscalService:
         data_fim: Optional[date] = None,
         empresa: Optional[str] = None,
         valor_min: Optional[float] = None,
-        valor_max: Optional[float] = None
+        valor_max: Optional[float] = None,
+        categoria: Optional[str] = None  
     ) -> int:
-        """
-        Conta o total de notas fiscais que atendem aos filtros
-        Útil para implementar paginação no frontend
-        """
+        """Conta o total de notas fiscais que atendem aos filtros"""
         query = db.query(func.count(NotaFiscal.id)).filter(
             NotaFiscal.user_id == user_id
         )
@@ -113,7 +94,6 @@ class FiscalService:
             query = query.filter(NotaFiscal.data >= data_inicio)
         
         if data_fim:
-            from datetime import datetime, time
             data_fim_completa = datetime.combine(data_fim, time(23, 59, 59))
             query = query.filter(NotaFiscal.data <= data_fim_completa)
         
@@ -125,6 +105,9 @@ class FiscalService:
         
         if valor_max is not None:
             query = query.filter(NotaFiscal.valor_total <= valor_max)
+        
+        if categoria:
+            query = query.filter(NotaFiscal.categoria == categoria)
         
         return query.scalar()
     
@@ -216,15 +199,16 @@ class FiscalService:
     @staticmethod
     def create_nota_fiscal(db: Session, user_id: int, nota_data: NotaFiscalCreate) -> NotaFiscal:
         user = db.query(User).filter(User.id == user_id).first()
-        if not user or not user.is_active:
-             raise HTTPException(status_code=400, detail="Usuário não encontrado ou inativo.")
-             
+        if not user or not user.is_active:  
+            raise HTTPException(status_code=400, detail="Usuário não encontrado ou inativo.")
+            
         db_nota = NotaFiscal(
             user_id=user_id,
             valor_total=nota_data.valor_total,
             data=nota_data.data,
             empresa=nota_data.empresa,
             url=nota_data.url,
+            categoria=nota_data.categoria.value if nota_data.categoria else None,  
         )
         
         db.add(db_nota)
@@ -232,7 +216,6 @@ class FiscalService:
         db.refresh(db_nota)
         
         metrica = FiscalService.calculate_and_update_metrics(db, user_id)
-        
         FiscalService.check_limit_and_notify(db, metrica, user)
         
         return db_nota
@@ -276,6 +259,10 @@ class FiscalService:
             return None
         
         update_data = nota_data.model_dump(exclude_unset=True)
+        
+        if 'categoria' in update_data and update_data['categoria'] is not None:
+            if hasattr(update_data['categoria'], 'value'):
+                update_data['categoria'] = update_data['categoria'].value
         
         for field, value in update_data.items():
             setattr(db_nota, field, value)

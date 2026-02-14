@@ -8,6 +8,8 @@ from app.db import get_db
 from app.dependencies import get_current_active_user 
 from app.models import User 
 from sqlalchemy.orm import Session
+import logging
+from app.schemas.nota_fiscal import CategoriaEnum
 
 
 router = APIRouter(
@@ -28,17 +30,13 @@ async def create_nota_fiscal(
     Cria uma nova nota fiscal, recalcula as métricas e dispara o alerta.
     """
     try:
-        # Usamos o ID do usuário obtido do token
         nota = FiscalService.create_nota_fiscal(db, current_user.id, nota_data)
         
         return nota
         
     except HTTPException:
-        # Se for uma exceção HTTPException que levantamos (ex: Usuário Inativo)
         raise
     except Exception as e:
-        # Tratamento de qualquer outro erro interno (DB, Serviço de E-mail, etc.)
-        import logging
         logging.error(f"Erro ao criar nota fiscal: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -55,44 +53,24 @@ async def get_notas_fiscais(
     empresa: Optional[str] = Query(None, description="Nome ou parte do nome da empresa"),
     valor_min: Optional[float] = Query(None, ge=0, description="Valor mínimo da nota fiscal"),
     valor_max: Optional[float] = Query(None, ge=0, description="Valor máximo da nota fiscal"),
+    categoria: Optional[str] = Query(None, description="Categoria da nota fiscal"),  
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    """
-    Obtém lista de notas fiscais do usuário autenticado com paginação e filtros opcionais.
+    """Obtém lista de notas fiscais do usuário autenticado com paginação e filtros opcionais."""
     
-    **Filtros disponíveis:**
-    - **data_inicio**: Filtra notas a partir desta data (inclusivo)
-    - **data_fim**: Filtra notas até esta data (inclusivo)
-    - **empresa**: Busca parcial no nome da empresa (case-insensitive)
-    - **valor_min**: Valor mínimo da nota fiscal
-    - **valor_max**: Valor máximo da nota fiscal
-    
-    **Paginação:**
-    - **skip**: Número de registros para pular
-    - **limit**: Número máximo de registros a retornar (máx: 1000)
-    
-    **Retorno:**
-    - **data**: Lista de notas fiscais
-    - **total**: Total de registros que atendem aos filtros
-    - **skip**: Offset aplicado
-    - **limit**: Limite aplicado
-    """
-    # Validar intervalo de datas
     if data_inicio and data_fim and data_inicio > data_fim:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="data_inicio não pode ser maior que data_fim"
         )
     
-    # Validar intervalo de valores
     if valor_min is not None and valor_max is not None and valor_min > valor_max:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="valor_min não pode ser maior que valor_max"
         )
     
-    # Buscar notas com filtros
     notas = FiscalService.get_all_notas_fiscais(
         db,
         user_id=current_user.id,
@@ -102,10 +80,10 @@ async def get_notas_fiscais(
         data_fim=data_fim,
         empresa=empresa,
         valor_min=valor_min,
-        valor_max=valor_max
+        valor_max=valor_max,
+        categoria=categoria  
     )
     
-    # Contar total de registros (para paginação no frontend)
     total = FiscalService.count_notas_fiscais(
         db,
         user_id=current_user.id,
@@ -113,7 +91,8 @@ async def get_notas_fiscais(
         data_fim=data_fim,
         empresa=empresa,
         valor_min=valor_min,
-        valor_max=valor_max
+        valor_max=valor_max,
+        categoria=categoria  
     )
     
     return {
@@ -124,6 +103,11 @@ async def get_notas_fiscais(
         "has_next": (skip + limit) < total,
         "has_previous": skip > 0
     }
+
+@router.get("/categorias", response_model=list[str])
+async def get_categorias():
+    """Retorna lista de categorias disponíveis"""
+    return [categoria.value for categoria in CategoriaEnum]
     
 @router.get("/metrics", response_model=MetricaResponse)
 async def get_user_metrics(
@@ -184,7 +168,6 @@ async def update_nota_fiscal(
     except HTTPException:
         raise
     except Exception as e:
-        import logging
         logging.error(f"Erro ao atualizar nota fiscal: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

@@ -91,7 +91,7 @@ class TestNotaFiscalModel:
             empresa="Empresa Teste",
             url="https://example.com"
         )
-        expected = "<NotaFiscal(id=1, user_id=2, valor_total=150.0)>"
+        expected = "<NotaFiscal(id=1, user_id=2, valor_total=150.0, categoria=None)>"
         assert repr(nota) == expected
 
     def test_default_values(self):

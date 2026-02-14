@@ -439,3 +439,146 @@ class TestFiscalService:
         # Verificar métrica atualizada
         db_session.refresh(metrica)
         assert metrica.total_gasto == 3000.00
+        
+        
+    def test_create_nota_fiscal_with_categoria(self, test_db, db_session, test_user):
+        """Testa criação de nota fiscal com categoria"""
+        from app.schemas.nota_fiscal import CategoriaEnum
+        
+        nota_data = NotaFiscalCreate(
+            valor_total=1500.00,
+            data=date(2026, 2, 13),
+            empresa="Amazon Web Services",
+            url="https://example.com/nota.pdf",
+            categoria=CategoriaEnum.SERVICOS_DIGITAIS
+        )
+        
+        nota = FiscalService.create_nota_fiscal(db_session, test_user.id, nota_data)
+        
+        assert nota.categoria == "Serviços Digitais"
+        assert nota.valor_total == 1500.00
+
+
+    def test_create_nota_fiscal_without_categoria(self, test_db, db_session, test_user):
+        """Testa criação de nota fiscal sem categoria (opcional)"""
+        nota_data = NotaFiscalCreate(
+            valor_total=800.00,
+            data=date(2026, 2, 13),
+            empresa="Padaria do João",
+            url="https://example.com/nota.pdf"
+        )
+        
+        nota = FiscalService.create_nota_fiscal(db_session, test_user.id, nota_data)
+        
+        assert nota.categoria is None
+        assert nota.valor_total == 800.00
+
+
+    def test_filter_notas_by_categoria(self, test_db, db_session, test_user):
+        """Testa filtro por categoria"""
+        from app.schemas.nota_fiscal import CategoriaEnum
+        
+        # Criar notas com diferentes categorias
+        nota1_data = NotaFiscalCreate(
+            valor_total=1000.0,
+            data=date(2026, 1, 15),
+            empresa="Restaurante ABC",
+            url="https://example.com/nota1.pdf",
+            categoria=CategoriaEnum.ALIMENTACAO
+        )
+        
+        nota2_data = NotaFiscalCreate(
+            valor_total=2000.0,
+            data=date(2026, 1, 16),
+            empresa="Uber",
+            url="https://example.com/nota2.pdf",
+            categoria=CategoriaEnum.TRANSPORTE
+        )
+        
+        nota3_data = NotaFiscalCreate(
+            valor_total=1500.0,
+            data=date(2026, 1, 17),
+            empresa="Restaurante XYZ",
+            url="https://example.com/nota3.pdf",
+            categoria=CategoriaEnum.ALIMENTACAO
+        )
+        
+        FiscalService.create_nota_fiscal(db_session, test_user.id, nota1_data)
+        FiscalService.create_nota_fiscal(db_session, test_user.id, nota2_data)
+        FiscalService.create_nota_fiscal(db_session, test_user.id, nota3_data)
+        
+        # Filtrar por categoria "Alimentação"
+        notas_alimentacao = FiscalService.get_all_notas_fiscais(
+            db_session,
+            test_user.id,
+            categoria="Alimentação"
+        )
+        
+        assert len(notas_alimentacao) == 2
+        assert all(nota.categoria == "Alimentação" for nota in notas_alimentacao)
+        
+        # Filtrar por categoria "Transporte"
+        notas_transporte = FiscalService.get_all_notas_fiscais(
+            db_session,
+            test_user.id,
+            categoria="Transporte"
+        )
+        
+        assert len(notas_transporte) == 1
+        assert notas_transporte[0].categoria == "Transporte"
+
+
+    def test_update_nota_fiscal_categoria(self, test_db, db_session, test_user):
+        """Testa atualização de categoria de nota fiscal"""
+        from app.schemas.nota_fiscal import CategoriaEnum
+        
+        # Criar nota fiscal sem categoria
+        nota_data = NotaFiscalCreate(
+            valor_total=5000.00,
+            data=date(2026, 1, 15),
+            empresa="Empresa Original",
+            url="https://example.com/nota.pdf"
+        )
+        created_nota = FiscalService.create_nota_fiscal(db_session, test_user.id, nota_data)
+        assert created_nota.categoria is None
+        
+        # Atualizar para adicionar categoria
+        update_data = NotaFiscalUpdate(
+            categoria=CategoriaEnum.MATERIAL_ESCRITORIO
+        )
+        
+        updated_nota = FiscalService.update_nota_fiscal(
+            db_session, 
+            created_nota.id, 
+            test_user.id, 
+            update_data
+        )
+        
+        assert updated_nota is not None
+        assert updated_nota.categoria == "Material de Escritório"
+        assert updated_nota.valor_total == 5000.00  # Não alterado
+
+
+    def test_count_notas_by_categoria(self, test_db, db_session, test_user):
+        """Testa contagem de notas por categoria"""
+        from app.schemas.nota_fiscal import CategoriaEnum
+        
+        # Criar notas com categorias
+        for i in range(3):
+            nota_data = NotaFiscalCreate(
+                valor_total=1000.00,
+                data=date(2026, 1, i + 1),
+                empresa=f"Empresa {i}",
+                url=f"https://example.com/nota{i}.pdf",
+                categoria=CategoriaEnum.SERVICOS_DIGITAIS
+            )
+            FiscalService.create_nota_fiscal(db_session, test_user.id, nota_data)
+        
+        # Contar notas da categoria "Serviços Digitais"
+        total = FiscalService.count_notas_fiscais(
+            db_session,
+            test_user.id,
+            categoria="Serviços Digitais"
+        )
+        
+        assert total == 3
