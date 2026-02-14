@@ -1,4 +1,4 @@
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, ConfigDict
 from datetime import date, datetime
 from typing import Optional
 from enum import Enum
@@ -52,8 +52,7 @@ class NotaFiscalResponse(BaseModel):
     categoria: Optional[str] = None  
     created_at: datetime
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class NotaFiscalFilter(BaseModel):
@@ -80,5 +79,4 @@ class MetricaResponse(BaseModel):
     percentual_atingido: float
     updated_at: Optional[datetime] = None
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
