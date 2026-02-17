@@ -1,6 +1,3 @@
-
-
-from time import time
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.models.nota_fiscal import NotaFiscal, Metrica
@@ -10,7 +7,7 @@ from app.services.email_service import EmailService, ALERT_THRESHOLDS
 from typing import List
 from typing import List, Optional
 import logging
-from datetime import date, datetime 
+from datetime import date, datetime, time 
 from fastapi import HTTPException
 
 # Define a precisão dos limiares para comparação
