@@ -26,6 +26,7 @@ BackEnd/
 │   │   ├── routes/
 │   │   │   ├── auth.py          # Rotas de autenticação
 │   │   │   ├── users.py         # Rotas de usuários
+│   │   │   ├── nota_fiscal.py   # Rotas notas fiscais
 │   │   │   └── __init__.py
 │   │   └── __init__.py
 │   ├── core/
@@ -37,17 +38,23 @@ BackEnd/
 │   │   └── __init__.py
 │   ├── models/
 │   │   ├── user.py              # Modelo de usuário (SQLAlchemy)
+│   │   ├── nota_fiscal.py       # Modelo de nota fiscal e métricas (SQLAlchemy)
 │   │   └── __init__.py
 │   ├── schemas/
 │   │   ├── user.py              # Schemas Pydantic para validação
+│   │   ├── base.py              # CamelModel para resolver importação circular 
+│   │   ├── nota_fiscal.py       # Schemas para nota fiscal e métricas
 │   │   └── __init__.py
 │   ├── services/
-│   │   ├── user_service.py      # Lógica de negócio de usuários
+│   │   ├── user_service.py        # Lógica de negócio de usuários
+│   │   ├── email_service.py       # Lógica de negócio de envio de email
+│   │   ├── nota_fiscal_service.py # Lógica de negócio de notas fiscais e métricas
 │   │   └── __init__.py
 │   ├── utils/
 │   │   ├── response.py          # Utilitários de resposta e paginação
 │   │   └── __init__.py
 │   ├── main.py                  # Aplicação principal FastAPI
+|   ├── dependencies.py          # Lógica de get_current_user
 │   └── __init__.py
 ├── tests/
 │   ├── test_api.py              # Testes da API
@@ -95,6 +102,8 @@ pip install -r requirements.txt
 ```bash
 cp .env.example .env
 # Edite o .env com suas credenciais PostgreSQL (ex.: DATABASE_URL=postgresql://postgres:sua_senha@localhost:5432/MeiDAsh)
+
+# Edite a senha do e-mail do .env com a senha de app que vai ser fornecida.
 ```
 
 6. **Inicializar banco de dados (opcional, para dados de teste)**
@@ -123,6 +132,32 @@ A API estará disponível em `http://localhost:8000`
 - `GET /api/users/{user_id}` - Obter detalhes de um usuário
 - `PUT /api/users/{user_id}` - Atualizar usuário
 - `DELETE /api/users/{user_id}` - Deletar usuário
+
+### Notas fiscais
+
+#### CRUD Básico
+
+- `POST /api/nfe` - Criar nova nota fiscal (com ou sem categoria) e recalcular métricas do usuário  
+- `GET /api/nfe` - Listar todas as notas fiscais do usuário autenticado (paginação padrão: skip=0, limit=100)  
+- `GET /api/nfe/{nota_id}` - Buscar uma nota fiscal específica por ID  
+- `PUT /api/nfe/{nota_id}` - Atualizar nota fiscal (valor, data, empresa, categoria) e recalcular métricas  
+- `DELETE /api/nfe/{nota_id}` - Deletar uma nota fiscal (hard delete) e recalcular métricas  
+
+#### Métricas e Categorias
+
+- `GET /api/nfe/metrics` - Retornar métricas do usuário (total_gasto, limite, percentual_atingido)  
+- `GET /api/nfe/categorias` - Listar todas as categorias disponíveis  
+
+#### Filtros e Consultas
+
+- `GET /api/nfe?skip=0&limit=10` - Buscar notas fiscais com paginação customizada  
+- `GET /api/nfe?data_inicio=2026-01-01&data_fim=2026-01-31` - Filtrar notas fiscais por período  
+- `GET /api/nfe?empresa=Google` - Filtrar por nome da empresa (busca parcial, case-insensitive)  
+- `GET /api/nfe?valor_min=1000&valor_max=5000` - Filtrar por faixa de valor  
+- `GET /api/nfe?categoria=Serviços Digitais` - Filtrar por categoria  
+- `GET /api/nfe?data_inicio=2026-01-01&data_fim=2026-12-31&categoria=Alimentação` - Filtrar por período e categoria  
+- `GET /api/nfe?empresa=Amazon&valor_min=500&categoria=Serviços Digitais` - Filtrar por empresa, valor mínimo e categoria  
+
 
 ### Utilitários
 

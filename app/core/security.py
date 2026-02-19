@@ -96,5 +96,6 @@ def decode_token(token: str) -> Optional[dict]:
             algorithms=[settings.ALGORITHM]
         )
         return payload
-    except JWTError:
+    except JWTError as e:
+        print("ERRO AO DECODIFICAR TOKEN:", e)
         return None
