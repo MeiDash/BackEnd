@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from app.models import User
 from app.schemas import UserCreate, UserUpdate, UserResponse
-from app.core.security import hash_password, verify_password
+from app.core.security import hash_password, verify_password, pwd_context
 from typing import Optional, List
 
 
@@ -109,6 +109,12 @@ class UserService:
         
         if not verify_password(password, user.hashed_password):
             return None
+        
+        # caso o algoritmo tenha mudado (p.ex. hash legado), rehash e grave
+        # novamente no banco para manter apenas argon2 em uso.
+        if pwd_context.needs_update(user.hashed_password):
+            user.hashed_password = hash_password(password)
+            db.commit()
         
         return user
     

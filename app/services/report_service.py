@@ -37,14 +37,16 @@ class ReportService:
     ) -> bytes:
         notas = FiscalService.get_all_notas_fiscais(
             db=db,
-            user_id=user_id, 
+            user_id=user_id,
+            skip=0,
+            limit=10_000,
             data_inicio=data_inicio, 
             data_fim=data_fim, 
             empresa=empresa, 
             valor_min=valor_min, 
             valor_max=valor_max, 
-            categoria=categoria, 
-            limit=10_000)
+            categoria=categoria
+        )
 
         total = sum(nota.valor_total for nota in notas)
         total_por_empresa   = defaultdict(float)
@@ -60,7 +62,7 @@ class ReportService:
         largura = doc.width
 
         periodo_ini = format_date(data_inicio) if data_inicio else format_date(min((n.data for n in notas if n.data), default=None))
-        periodo_fim = format_date(data_fim) if data_fim else date.today()
+        periodo_fim = format_date(data_fim) if data_fim else format_date(date.today())
 
         story = []
         _build_header(story, s_titulo, s_sub, s_normal, data_inicio, data_fim, empresa, categoria, valor_min, valor_max, periodo_ini, periodo_fim)
@@ -95,13 +97,14 @@ class ReportService:
         notas = FiscalService.get_all_notas_fiscais(
             db=db,
             user_id=user_id,
+            skip=0,
+            limit=10_000,
             data_inicio=data_inicio,
             data_fim=data_fim,
             empresa=None,
             valor_min=None,
             valor_max=None,
-            categoria=None,
-            limit=None
+            categoria=None
         )
 
         output = io.StringIO()
