@@ -35,6 +35,7 @@ class ReportService:
         valor_max: Optional[float] = None,
         categoria: Optional[str] = None,
     ) -> bytes:
+
         notas = FiscalService.get_all_notas_fiscais(
             db=db,
             user_id=user_id,
@@ -91,32 +92,36 @@ class ReportService:
         user_id: int,
         data_inicio: Optional[date] = None,
         data_fim: Optional[date] = None,
+        empresa: Optional[str] = None,
+        valor_min: Optional[float] = None,
+        valor_max: Optional[float] = None,
+        categoria: Optional[str] = None,
+    
     ) -> str:
         """Gera o relatório agrupado por categoria em CSV."""
         ...
         notas = FiscalService.get_all_notas_fiscais(
             db=db,
             user_id=user_id,
-            skip=0,
-            limit=10_000,
             data_inicio=data_inicio,
             data_fim=data_fim,
-            empresa=None,
-            valor_min=None,
-            valor_max=None,
-            categoria=None
+            empresa=empresa,
+            valor_min=valor_min,
+            valor_max=valor_max,
+            categoria=categoria
         )
 
         output = io.StringIO()
         writer = csv.writer(output)
 
-        writer.writerow(["id","valor", "categoria", "empresa"])
+        writer.writerow(["id","valor", "categoria", "empresa", "data"])
         for nota in notas:
             writer.writerow([
                 nota.id,
                 nota.valor_total,
                 nota.categoria or "-",
                 nota.empresa or "-",
+                format_date(nota.data) if nota.data else "-"
             ])
 
         return output.getvalue()
