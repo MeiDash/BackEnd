@@ -9,6 +9,8 @@ import io
 
 from app.db import get_db
 from app.services.report_service import ReportService
+from app.dependencies import get_current_active_user 
+from app.models.user import User 
 
 router = APIRouter(
     prefix="/api/reports",
@@ -21,9 +23,9 @@ router = APIRouter(
 # Relatório Geral
 # ---------------------------------------------------------------------------
 
-@router.get("/geral/pdf")
+@router.get("/pdf")
 async def relatorio_geral_pdf(
-    user_id: int = Query(..., description="ID do usuário"),
+    current_user: int = Depends(get_current_active_user),
     data_inicio: Optional[date] = Query(None, description="Data inicial (YYYY-MM-DD)"),
     data_fim: Optional[date] = Query(None, description="Data final (YYYY-MM-DD)"),
     empresa: Optional[str] = Query(None, description="Nome ou parte do nome da empresa"),
@@ -36,7 +38,7 @@ async def relatorio_geral_pdf(
     try:
         pdf_bytes = ReportService.generate_relatorio_geral_pdf(
             db=db,
-            user_id=user_id,
+            user_id=current_user.id,
             data_inicio=data_inicio,
             data_fim=data_fim,
             empresa=empresa,
@@ -54,9 +56,9 @@ async def relatorio_geral_pdf(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
-@router.get("/geral/csv")
+@router.get("/csv")
 async def relatorio_geral_csv(
-    user_id: int = Query(..., description="ID do usuário"),
+    user_id: int = Depends(get_current_active_user),
     data_inicio: Optional[date] = Query(None),
     data_fim: Optional[date] = Query(None),
     empresa: Optional[str] = Query(None),
@@ -69,7 +71,7 @@ async def relatorio_geral_csv(
     try:
         csv_str = ReportService.generate_relatorio_geral_csv(
             db=db,
-            user_id=user_id,
+            user_id=current_user.id,
             data_inicio=data_inicio,
             data_fim=data_fim,
         )
