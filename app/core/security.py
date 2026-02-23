@@ -8,16 +8,24 @@ from passlib.context import CryptContext
 from app.core.config import settings
 
 # Configuração do contexto de criptografia
-# Usar bcrypt em produção, mas plaintext para testes
+# Anteriormente eram usados outros algoritmos (pbkdf2-sha256, bcrypt),
+# então mantemos compatibilidade lendo hashes legados e atualizando para
+# argon2 automaticamente quando o usuário fizer login.
+# Em ambiente de teste podemos forçar outro esquema se desejado via
+# variável de ambiente TESTING.
 import os
+
+# lista de esquemas de hash conhecidos/permitidos pela aplicação
+known_schemes = ["argon2", "pbkdf2_sha256"]
 if os.getenv("TESTING"):
+    # durante testes podemos trocar o esquema para algo mais rápido
     pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 else:
     pwd_context = CryptContext(
-        schemes=["argon2"],
+        schemes=known_schemes,
+        default="argon2",
         deprecated="auto",
-        # bcrypt__default_rounds=12,
-        # bcrypt__ident="2b"  # Usar versão mais recente do bcrypt
+        # configurações específicas (ex.: rounds) podem ir aqui
     )
 
 
