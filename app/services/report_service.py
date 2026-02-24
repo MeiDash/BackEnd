@@ -49,6 +49,8 @@ class ReportService:
             categoria=categoria
         )
 
+        notas.sort(key=lambda n: n.data or date.min)
+
         total = sum(nota.valor_total for nota in notas)
         total_por_empresa   = defaultdict(float)
         total_por_categoria = defaultdict(float)
@@ -110,6 +112,8 @@ class ReportService:
             valor_max=valor_max,
             categoria=categoria
         )
+
+        notas.sort(key=lambda n: n.data or date.min)
 
         output = io.StringIO()
         writer = csv.writer(output)
