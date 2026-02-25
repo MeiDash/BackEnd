@@ -10,6 +10,11 @@ psycopg2-binary==2.9.10
 python-dotenv==1.0.1
 cors==1.0.1
 httpx==0.28.1
+# PDF generation library used by report_service and utils
+reportlab==3.7.0
+# Image conversion from PDF pages; requires system poppler utils
+pdf2image==1.16.3
+argon2-cffi==23.2.0  # required by passlib for argon2 hashing
 pytest==8.3.4
 pytest-asyncio==0.25.1
 email-validator==2.2.0

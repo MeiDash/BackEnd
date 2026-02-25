@@ -6,15 +6,17 @@ from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from app.core.config import settings
-
-# Configuração do contexto de criptografia
 import os
+
+# lista de esquemas de hash conhecidos/permitidos pela aplicação
+known_schemes = ["argon2", "pbkdf2_sha256"]
 if os.getenv("TESTING"):
+
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 else:
     pwd_context = CryptContext(
         schemes=["bcrypt"],
-        deprecated="auto"
+
     )
 
 

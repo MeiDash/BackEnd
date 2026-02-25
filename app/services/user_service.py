@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from app.models import User
 from app.schemas import UserCreate, UserUpdate, UserResponse
-from app.core.security import hash_password, verify_password
+from app.core.security import hash_password, verify_password, pwd_context
 from typing import Optional, List
 
 
@@ -127,7 +127,9 @@ class UserService:
             print(f"❌ authenticate_user: senha inválida para {email}")
             return None
         
+
         print(f"✅ authenticate_user: autenticação bem-sucedida para {email}")
+
         return user
     
     @staticmethod

@@ -59,13 +59,14 @@ async def health_check():
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
-    """Handler global para exceções não tratadas"""
-    return {
-        "status": "error",
-        "message": "Erro interno do servidor",
-        "detail": str(exc) if settings.ENVIRONMENT == "development" else None,
-    }
-
+    return JSONResponse(
+        status_code=500,
+        content={
+            "status": "error",
+            "message": "Erro interno do servidor",
+            "detail": str(exc) if settings.ENVIRONMENT == "development" else "Internal Error",
+        }
+    )
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request, exc: RequestValidationError):
@@ -75,7 +76,7 @@ async def validation_exception_handler(request, exc: RequestValidationError):
     (mais de 72 bytes) e retorna uma mensagem clara para o cliente.
     """
     errors = exc.errors()
-
+    
     # Procurar por erro relacionado ao campo 'password' com indicação de 72 bytes
     for err in errors:
         msg = err.get("msg", "")
@@ -91,6 +92,7 @@ async def validation_exception_handler(request, exc: RequestValidationError):
                 ]
             }
             return JSONResponse(status_code=HTTP_422_UNPROCESSABLE_ENTITY, content=content)
-
-    # Caso padrão: retornar lista de erros como JSON
-    return JSONResponse(status_code=HTTP_422_UNPROCESSABLE_ENTITY, content={"detail": errors})
+    return JSONResponse(
+        status_code=HTTP_422_UNPROCESSABLE_ENTITY, 
+        content={"detail": errors}
+    )
