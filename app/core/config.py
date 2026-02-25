@@ -31,6 +31,8 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str
     EMAIL_SENDER: str
     
+    REPORT_LOGO_PATH: str
+
     class Config:
         env_file = ".env"
         case_sensitive = True
