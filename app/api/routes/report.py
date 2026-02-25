@@ -25,7 +25,7 @@ router = APIRouter(
 
 @router.get("/pdf")
 async def relatorio_geral_pdf(
-    current_user: int = Depends(get_current_active_user),
+    current_user = Depends(get_current_active_user),
     data_inicio: Optional[date] = Query(None, description="Data inicial (YYYY-MM-DD)"),
     data_fim: Optional[date] = Query(None, description="Data final (YYYY-MM-DD)"),
     empresa: Optional[str] = Query(None, description="Nome ou parte do nome da empresa"),
@@ -38,7 +38,7 @@ async def relatorio_geral_pdf(
     try:
         pdf_bytes = ReportService.generate_relatorio_geral_pdf(
             db=db,
-            user_id=current_user.id,
+            user=current_user,
             data_inicio=data_inicio,
             data_fim=data_fim,
             empresa=empresa,
@@ -58,7 +58,7 @@ async def relatorio_geral_pdf(
 
 @router.get("/csv")
 async def relatorio_geral_csv(
-    user_id: int = Depends(get_current_active_user),
+    current_user: int = Depends(get_current_active_user),
     data_inicio: Optional[date] = Query(None),
     data_fim: Optional[date] = Query(None),
     empresa: Optional[str] = Query(None),
@@ -74,9 +74,13 @@ async def relatorio_geral_csv(
             user_id=current_user.id,
             data_inicio=data_inicio,
             data_fim=data_fim,
+            empresa=empresa,
+            valor_min=valor_min,
+            valor_max=valor_max,
+            categoria=categoria
         )
         return Response(
-            content=csv_str.encode("utf-8-sig"),  # utf-8-sig para abrir corretamente no Excel
+            content=csv_str.encode("utf-8-sig"), 
             media_type="text/csv",
             headers={"Content-Disposition": "attachment; filename=relatorio_geral.csv"},
         )
@@ -87,4 +91,13 @@ async def relatorio_geral_csv(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
-
+# @router.get("/pdf/preview")  
+# async def preview_pdf(
+#     user = ,
+#     db: Session = Depends(get_db),
+# ):
+#     pdf_bytes = ReportService.generate_relatorio_geral_pdf(db=db, user_id=user_id)
+#     import base64
+#     b64 = base64.b64encode(pdf_bytes).decode()
+#     html = f'<iframe src="data:application/pdf;base64,{b64}" width="100%" height="100%" style="position:fixed;top:0;left:0;border:none"></iframe>'
+#     return Response(content=html, media_type="text/html")

@@ -1,33 +1,31 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 from typing import Optional
-
-from datetime import date, datetime, time
+from datetime import date, datetime
 from io import BytesIO
 from collections import defaultdict
 import csv
 import io
+import os, pathlib
 
 from reportlab.lib.pagesizes import A4
-from reportlab.lib import colors
 from reportlab.lib.units import cm
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 
-from datetime import date
 from app.services.nota_fiscal_service import FiscalService
-from app.models.nota_fiscal import NotaFiscal
 from app.utils.format_pdf import _build_styles, _build_cards, _build_footer, _build_header, _build_tabela_detalhada, _tabela_resumo
-from app.utils.utils import format_date, format_value
+from app.utils.format_charts import build_grafico_duplo, build_grafico_gastos_por_mes
+from app.utils.format_header import build_user_header   
+from app.utils.utils import format_date
+from reportlab.platypus import KeepTogether
 
 
 class ReportService:
-    
+
+
     @staticmethod
     def generate_relatorio_geral_pdf(
         db: Session,
-        user_id: int,
+        user,                           
         data_inicio: Optional[date] = None,
         data_fim: Optional[date] = None,
         empresa: Optional[str] = None,
@@ -38,17 +36,17 @@ class ReportService:
 
         notas = FiscalService.get_all_notas_fiscais(
             db=db,
-            user_id=user_id,
+            user_id=user.id,
             skip=0,
             limit=10_000,
-            data_inicio=data_inicio, 
-            data_fim=data_fim, 
-            empresa=empresa, 
-            valor_min=valor_min, 
-            valor_max=valor_max, 
-            categoria=categoria
+            data_inicio=data_inicio,
+            data_fim=data_fim,
+            empresa=empresa,
+            valor_min=valor_min,
+            valor_max=valor_max,
+            categoria=categoria,
         )
-
+        notas = [n for n in notas if n.user_id == user.id]
         notas.sort(key=lambda n: n.data or date.min)
 
         total = sum(nota.valor_total for nota in notas)
@@ -60,7 +58,11 @@ class ReportService:
             total_por_categoria[nota.categoria or "Sem categoria"] += nota.valor_total
 
         buffer = BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=2*cm, leftMargin=2*cm, topMargin=2*cm, bottomMargin=2*cm)
+        doc = SimpleDocTemplate(
+            buffer, pagesize=A4,
+            rightMargin=2*cm, leftMargin=2*cm,
+            topMargin=2*cm, bottomMargin=2*cm,
+        )
         s_titulo, s_sub, s_secao, s_normal, s_rodape = _build_styles()
         largura = doc.width
 
@@ -68,17 +70,39 @@ class ReportService:
         periodo_fim = format_date(data_fim) if data_fim else format_date(date.today())
 
         story = []
+
+        build_user_header(story, user, s_normal, largura)
+
         _build_header(story, s_titulo, s_sub, s_normal, data_inicio, data_fim, empresa, categoria, valor_min, valor_max, periodo_ini, periodo_fim)
         _build_cards(story, s_normal, largura, total, len(notas))
 
+        # --- Resumo por Empresa ---
         story.append(Paragraph("Resumo por Empresa", s_secao))
         story.append(_tabela_resumo(total_por_empresa, total, s_normal, largura))
+        story.append(Spacer(1, 0.4 * cm))
+        story.append(build_grafico_duplo(
+            dict(total_por_empresa),
+            titulo_pizza="Distribuição por Empresa",
+            titulo_barras="Top Empresas por Valor",
+            largura=largura,
+        ))
         story.append(Spacer(1, 0.6 * cm))
 
+        # --- Resumo por Categoria ---
         story.append(Paragraph("Resumo por Categoria", s_secao))
         story.append(_tabela_resumo(total_por_categoria, total, s_normal, largura))
+        story.append(Spacer(1, 0.4 * cm))
+        story.append(build_grafico_duplo(
+            dict(total_por_categoria),
+            titulo_pizza="Distribuição por Categoria",
+            titulo_barras="Top Categorias por Valor",
+            largura=largura,
+        ))
+        story.append(Spacer(1, 0.4 * cm))
+        story.append(build_grafico_gastos_por_mes(notas, largura))
         story.append(Spacer(1, 0.6 * cm))
 
+        # --- Detalhamento ---
         story.append(Paragraph("Detalhamento das Notas Fiscais", s_secao))
         _build_tabela_detalhada(story, s_normal, largura, notas, total)
 
@@ -86,7 +110,6 @@ class ReportService:
 
         doc.build(story)
         return buffer.getvalue()
-            
 
     @staticmethod
     def generate_relatorio_geral_csv(
@@ -98,36 +121,36 @@ class ReportService:
         valor_min: Optional[float] = None,
         valor_max: Optional[float] = None,
         categoria: Optional[str] = None,
-    
     ) -> str:
-        """Gera o relatório agrupado por categoria em CSV."""
-        ...
+        ReportService._validate_user(user_id)
+
         notas = FiscalService.get_all_notas_fiscais(
             db=db,
             user_id=user_id,
+            skip=0,
+            limit=10_000,
             data_inicio=data_inicio,
             data_fim=data_fim,
             empresa=empresa,
             valor_min=valor_min,
             valor_max=valor_max,
-            categoria=categoria
+            categoria=categoria,
         )
 
+        notas = [n for n in notas if n.user_id == user_id]
         notas.sort(key=lambda n: n.data or date.min)
 
         output = io.StringIO()
         writer = csv.writer(output)
 
-        writer.writerow(["id","valor", "categoria", "empresa", "data"])
+        writer.writerow(["id", "valor", "categoria", "empresa", "data"])
         for nota in notas:
             writer.writerow([
                 nota.id,
                 nota.valor_total,
                 nota.categoria or "-",
                 nota.empresa or "-",
-                format_date(nota.data) if nota.data else "-"
+                format_date(nota.data) if nota.data else "-",
             ])
 
         return output.getvalue()
-        
-  

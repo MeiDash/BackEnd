@@ -8,11 +8,12 @@ from datetime import datetime
 from app.utils.utils import format_date, format_value
 
 COR_PRIMARIA   = colors.HexColor("#1A56DB")
-COR_HEADER_TAB = colors.HexColor("#059669")  
-COR_LINHA_PAR  = colors.HexColor("#EBF5FB")  
-COR_TOTAL      = colors.HexColor("#D1FAE5")  
-COR_TEXTO      = colors.HexColor("#1F2937")  
-COR_SUBTEXTO   = colors.HexColor("#6B7280")  
+COR_HEADER_TAB = colors.HexColor("#059669")
+COR_LINHA_PAR  = colors.HexColor("#EBF5FB")
+COR_TOTAL      = colors.HexColor("#D1FAE5")
+COR_TEXTO      = colors.HexColor("#1F2937")
+COR_SUBTEXTO   = colors.HexColor("#6B7280")
+
 
 def _build_styles():
     """Cria e retorna os estilos customizados do relatório."""
@@ -59,7 +60,7 @@ def _build_styles():
     return titulo, subtitulo, secao, normal, rodape
 
 
-def _tabela_resumo(dados: dict[str, float], total:int, s_normal, largura) -> Table:
+def _tabela_resumo(dados: dict[str, float], total: int, s_normal, largura) -> Table:
     s_dir = ParagraphStyle("Dir", parent=s_normal, alignment=TA_RIGHT)
 
     rows = [[
@@ -83,24 +84,27 @@ def _tabela_resumo(dados: dict[str, float], total:int, s_normal, largura) -> Tab
     n = len(rows)
     t = Table(rows, colWidths=[largura * 0.55, largura * 0.25, largura * 0.20])
     t.setStyle(TableStyle([
-        ("BACKGROUND",    (0, 0), (-1, 0), COR_HEADER_TAB),
-        ("TEXTCOLOR",     (0, 0), (-1, 0), colors.white),
+        ("BACKGROUND",    (0, 0), (-1, 0),     COR_HEADER_TAB),
+        ("TEXTCOLOR",     (0, 0), (-1, 0),     colors.white),
         ("ROWBACKGROUND", (0, 1), (-1, n - 2), [colors.white, COR_LINHA_PAR]),
         ("BACKGROUND",    (0, n - 1), (-1, -1), COR_TOTAL),
-        ("BOX",           (0, 0), (-1, -1), 0.5, colors.grey),
-        ("INNERGRID",     (0, 0), (-1, -1), 0.3, colors.lightgrey),
-        ("TOPPADDING",    (0, 0), (-1, -1), 5),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
-        ("LEFTPADDING",   (0, 0), (-1, -1), 6),
+        ("BOX",           (0, 0), (-1, -1),    0.5, colors.grey),
+        ("INNERGRID",     (0, 0), (-1, -1),    0.3, colors.lightgrey),
+        ("TOPPADDING",    (0, 0), (-1, -1),    5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1),    5),
+        ("LEFTPADDING",   (0, 0), (-1, -1),    6),
     ]))
     return t
 
+
 def _build_header(story, s_titulo, s_sub, s_normal, data_inicio, data_fim, empresa, categoria, valor_min, valor_max, periodo_ini, periodo_fim):
+    """Cabeçalho do relatório — título, período e filtros ativos.
+    
+    Nota: 'Gerado em' foi removido daqui pois agora aparece no bloco
+    de informações do usuário (format_user_header.py).
+    """
     story.append(Paragraph("Relatório Geral de Notas Fiscais", s_titulo))
-    story.append(Paragraph(f"Gerado em {datetime.now().strftime('%d/%m/%Y às %H:%M')}", s_sub))
     story.append(Spacer(1, 0.3 * cm))
-    story.append(HRFlowable(width="100%", thickness=1.5, color=COR_PRIMARIA))
-    story.append(Spacer(1, 0.4 * cm))
 
     story.append(Paragraph(f"<b>Período:</b> {periodo_ini} até {periodo_fim}", s_normal))
     if empresa:
@@ -111,6 +115,7 @@ def _build_header(story, s_titulo, s_sub, s_normal, data_inicio, data_fim, empre
         story.append(Paragraph(f"<b>Valor mínimo:</b> {format_value(valor_min)}", s_normal))
     if valor_max is not None:
         story.append(Paragraph(f"<b>Valor máximo:</b> {format_value(valor_max)}", s_normal))
+
 
 def _build_cards(story, s_normal, largura, total, qtd_notas):
     story.append(Spacer(1, 0.5 * cm))
@@ -133,6 +138,7 @@ def _build_cards(story, s_normal, largura, total, qtd_notas):
     ]))
     story.append(card)
     story.append(Spacer(1, 0.6 * cm))
+
 
 def _build_tabela_detalhada(story, s_normal, largura, notas, total):
     s_dir = ParagraphStyle("DirNotas", parent=s_normal, alignment=TA_RIGHT)
@@ -160,20 +166,25 @@ def _build_tabela_detalhada(story, s_normal, largura, notas, total):
     ])
 
     n = len(notas_rows)
-    tabela = Table(notas_rows, colWidths=[largura * 0.08, largura * 0.14, largura * 0.34, largura * 0.22, largura * 0.22], repeatRows=1)
+    tabela = Table(
+        notas_rows,
+        colWidths=[largura * 0.08, largura * 0.14, largura * 0.34, largura * 0.22, largura * 0.22],
+        repeatRows=1,
+    )
     tabela.setStyle(TableStyle([
-        ("BACKGROUND",    (0, 0), (-1, 0), COR_HEADER_TAB),
-        ("TEXTCOLOR",     (0, 0), (-1, 0), colors.white),
+        ("BACKGROUND",    (0, 0), (-1, 0),     COR_HEADER_TAB),
+        ("TEXTCOLOR",     (0, 0), (-1, 0),     colors.white),
         ("ROWBACKGROUND", (0, 1), (-1, n - 2), [colors.white, COR_LINHA_PAR]),
         ("BACKGROUND",    (0, n - 1), (-1, -1), COR_TOTAL),
-        ("BOX",           (0, 0), (-1, -1), 0.5, colors.grey),
-        ("INNERGRID",     (0, 0), (-1, -1), 0.3, colors.lightgrey),
-        ("TOPPADDING",    (0, 0), (-1, -1), 5),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
-        ("LEFTPADDING",   (0, 0), (-1, -1), 6),
+        ("BOX",           (0, 0), (-1, -1),    0.5, colors.grey),
+        ("INNERGRID",     (0, 0), (-1, -1),    0.3, colors.lightgrey),
+        ("TOPPADDING",    (0, 0), (-1, -1),    5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1),    5),
+        ("LEFTPADDING",   (0, 0), (-1, -1),    6),
     ]))
     story.append(tabela)
     story.append(Spacer(1, 0.8 * cm))
+
 
 def _build_footer(story, s_rodape):
     story.append(HRFlowable(width="100%", thickness=0.5, color=COR_SUBTEXTO))
