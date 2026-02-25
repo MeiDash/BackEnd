@@ -103,14 +103,31 @@ class UserService:
         password: str
     ) -> Optional[User]:
         """Autentica um usuário com email e senha"""
+        print(f"🔐 authenticate_user: buscando usuário com email: {email}")
         user = UserService.get_user_by_email(db, email)
         
-        if not user or not user.is_active:
+        if not user:
+            print(f"❌ authenticate_user: usuário não encontrado com email: {email}")
             return None
         
-        if not verify_password(password, user.hashed_password):
+        print(f"✅ authenticate_user: usuário encontrado")
+        print(f"   Email: {user.email}")
+        print(f"   Ativo: {user.is_active}")
+        print(f"   Hash armazenado: {user.hashed_password[:50]}...")
+        
+        if not user.is_active:
+            print(f"❌ authenticate_user: usuário inativo")
             return None
         
+        print(f"🔐 authenticate_user: verificando senha...")
+        password_valid = verify_password(password, user.hashed_password)
+        print(f"🔐 authenticate_user: resultado da verificação: {password_valid}")
+        
+        if not password_valid:
+            print(f"❌ authenticate_user: senha inválida para {email}")
+            return None
+        
+        print(f"✅ authenticate_user: autenticação bem-sucedida para {email}")
         return user
     
     @staticmethod

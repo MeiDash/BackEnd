@@ -42,7 +42,15 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     Returns:
         True se as senhas correspondem, False caso contrário
     """
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        print(f"🔐 verify_password: comparando senhas")
+        print(f"   Hash esperado: {hashed_password[:50]}...")
+        result = pwd_context.verify(plain_password, hashed_password)
+        print(f"🔐 verify_password: resultado = {result}")
+        return result
+    except Exception as e:
+        print(f"❌ verify_password: ERRO durante verificação: {type(e).__name__}: {e}")
+        return False
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
