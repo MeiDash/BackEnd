@@ -259,3 +259,14 @@ class TestNotaFiscalModel:
         assert nota.empresa == "Google Brasil"
         assert nota.categoria == "Serviços Digitais"
         assert nota.created_at is not None
+        
+    def test_create_with_cnpj_valid(self):
+        data = {
+            "valor_total": 500.0,
+            "data": date(2024, 1, 15),
+            "empresa": "Empresa Teste",
+            "cnpj": "06.990.590/0001-23",
+            "url": "https://example.com/nota.pdf"
+        }
+        nota = NotaFiscalCreate(**data)
+        assert nota.cnpj == "06.990.590/0001-23"

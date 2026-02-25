@@ -18,6 +18,7 @@ class NotaFiscalCreate(BaseModel):
     empresa: str
     url: str
     categoria: Optional[CategoriaEnum] = None 
+    cnpj: Optional[str] = None
     
     @field_validator('valor_total')
     @classmethod
@@ -32,6 +33,7 @@ class NotaFiscalUpdate(BaseModel):
     data: Optional[date] = None
     empresa: Optional[str] = None
     url: Optional[str] = None
+    cnpj: Optional[str] = None
     categoria: Optional[CategoriaEnum] = None  
     
     @field_validator('valor_total')
@@ -48,6 +50,7 @@ class NotaFiscalResponse(BaseModel):
     valor_total: float
     data: datetime
     empresa: str
+    cnpj: Optional[str] = None
     url: str
     categoria: Optional[str] = None  
     created_at: datetime

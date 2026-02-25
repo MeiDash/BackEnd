@@ -204,6 +204,7 @@ class FiscalService:
             valor_total=nota_data.valor_total,
             data=nota_data.data,
             empresa=nota_data.empresa,
+            cnpj=nota_data.cnpj,
             url=nota_data.url,
             categoria=nota_data.categoria.value if nota_data.categoria else None,  
         )

@@ -1,6 +1,9 @@
 """
 Rotas de usuário
 """
+from app.dependencies import get_current_active_user
+from app.models.user import User
+from app.schemas.user import UserUpdatePassword
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 
@@ -138,3 +141,37 @@ async def delete_user(
         )
     
     return None
+
+@router.post("/me/change-password", status_code=status.HTTP_200_OK)
+async def change_password(
+    password_data: UserUpdatePassword,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Atualiza a senha do usuário autenticado após validar a senha atual.
+    """
+    try:
+        success = UserService.update_password(
+            db, 
+            user_id=current_user.id, 
+            passwords=password_data
+        )
+        
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="A senha atual está incorreta."
+            )
+        
+        return APIResponse.success(message="Senha atualizada com sucesso")
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        import logging
+        logging.error(f"Erro ao alterar senha do usuário {current_user.id}: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Erro interno ao processar a alteração de senha."
+        )

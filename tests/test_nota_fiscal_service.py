@@ -735,3 +735,30 @@ class TestFiscalService:
         )
         
         assert total == 3
+        
+    def test_create_nota_fiscal_with_cnpj(self, test_db, db_session, test_user):
+        nota_data = NotaFiscalCreate(
+            valor_total=5000.0,
+            data=date(2026, 2, 13),
+            empresa="Google Brasil LTDA",
+            cnpj="06.990.590/0001-23",
+            url="https://example.com/nota.pdf"
+        )
+        
+        nota = FiscalService.create_nota_fiscal(db_session, test_user.id, nota_data)
+        
+        assert nota.cnpj == "06.990.590/0001-23"
+        assert nota.empresa == "Google Brasil LTDA"
+
+
+    def test_create_nota_fiscal_without_cnpj(self, test_db, db_session, test_user):
+        nota_data = NotaFiscalCreate(
+            valor_total=1000.0,
+            data=date(2026, 2, 13),
+            empresa="Padaria do João",
+            url="https://example.com/nota.pdf"
+        )
+        
+        nota = FiscalService.create_nota_fiscal(db_session, test_user.id, nota_data)
+        
+        assert nota.cnpj is None
