@@ -204,6 +204,7 @@ class FiscalService:
             valor_total=nota_data.valor_total,
             data=nota_data.data,
             empresa=nota_data.empresa,
+            cnpj=nota_data.cnpj,
             url=nota_data.url,
             categoria=nota_data.categoria.value if nota_data.categoria else None,  
         )
@@ -295,3 +296,19 @@ class FiscalService:
             FiscalService.check_limit_and_notify(db, metrica, user)
         
         return True
+    
+    @staticmethod
+    def update_user_limit(db: Session, user_id: int, new_limit: float) -> Metrica:
+        """Atualiza o limite customizado do usuário e recalcula o percentual"""
+        metrica = db.query(Metrica).filter(Metrica.user_id == user_id).first()
+        
+        if not metrica:
+            # Se não existe, cria com o novo limite
+            metrica = Metrica(user_id=user_id, limite=new_limit, total_gasto=0.0)
+            db.add(metrica)
+        else:
+            metrica.limite = new_limit
+            
+        db.commit()
+        db.refresh(metrica)
+        return metrica

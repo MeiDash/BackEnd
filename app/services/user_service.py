@@ -1,6 +1,7 @@
 """
 Serviço de usuário com lógica de negócio
 """
+from app.schemas.user import UserUpdatePassword
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from app.models import User
@@ -127,3 +128,20 @@ class UserService:
             return False
         
         return query.filter(or_(*filters)).first() is not None
+
+    @staticmethod
+    def update_password(db: Session, user_id: int, passwords: UserUpdatePassword) -> bool:
+        """
+        Verifica a senha atual e atualiza para a nova senha
+        """
+        db_user = db.query(User).filter(User.id == user_id).first()
+        
+        if not db_user:
+            return False
+            
+        if not verify_password(passwords.current_password, db_user.hashed_password):
+            return False
+            
+        db_user.hashed_password = hash_password(passwords.new_password)
+        db.commit()
+        return True

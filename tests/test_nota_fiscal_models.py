@@ -33,10 +33,10 @@ class TestNotaFiscalSchemas:
             "data": date(2024, 1, 15),
             "empresa": "Empresa Teste",
             "url": "https://example.com/nota.pdf",
-            "categoria": CategoriaEnum.SERVICOS_DIGITAIS
+            "categoria": CategoriaEnum.AGUA_MINERAL
         }
         nota = NotaFiscalCreate(**data)
-        assert nota.categoria == CategoriaEnum.SERVICOS_DIGITAIS
+        assert nota.categoria == CategoriaEnum.AGUA_MINERAL
 
     def test_create_invalid_valor_total_negative(self):
         data = {
@@ -121,20 +121,20 @@ class TestNotaFiscalSchemas:
         assert update.valor_total is None
 
     def test_update_partial_categoria(self):
-        data = {"categoria": CategoriaEnum.ALIMENTACAO}
+        data = {"categoria": CategoriaEnum.AGUA_MINERAL}
         update = NotaFiscalUpdate(**data)
-        assert update.categoria == CategoriaEnum.ALIMENTACAO
+        assert update.categoria == CategoriaEnum.AGUA_MINERAL
 
     def test_update_multiple_fields(self):
         data = {
             "valor_total": 800.0,
             "empresa": "Nova Empresa",
-            "categoria": CategoriaEnum.TRANSPORTE
+            "categoria": CategoriaEnum.BEBIDAS_NAO_ALCOOLICAS
         }
         update = NotaFiscalUpdate(**data)
         assert update.valor_total == 800.0
         assert update.empresa == "Nova Empresa"
-        assert update.categoria == CategoriaEnum.TRANSPORTE
+        assert update.categoria == CategoriaEnum.BEBIDAS_NAO_ALCOOLICAS
         assert update.data is None
         assert update.url is None
 
@@ -194,13 +194,13 @@ class TestNotaFiscalSchemas:
         assert resp.categoria == "Serviços Digitais"
 
     def test_categoria_enum_values(self):
-        assert CategoriaEnum.MATERIAL_ESCRITORIO == "Material de Escritório"
-        assert CategoriaEnum.SERVICOS_DIGITAIS == "Serviços Digitais"
-        assert CategoriaEnum.ALIMENTACAO == "Alimentação"
-        assert CategoriaEnum.TRANSPORTE == "Transporte"
+        assert CategoriaEnum.AGUA_MINERAL == "Água Mineral"
+        assert CategoriaEnum.AGUA_SANEAMENTO == "Água e Saneamento"
+        assert CategoriaEnum.CALCADOS == "Calçados"
+        assert CategoriaEnum.EQUIP_TI == "Equipamentos de TI"
 
     def test_categoria_enum_count(self):
-        assert len(CategoriaEnum) == 4
+        assert len(CategoriaEnum) == 99
 
 
 class TestNotaFiscalModel:
@@ -259,3 +259,14 @@ class TestNotaFiscalModel:
         assert nota.empresa == "Google Brasil"
         assert nota.categoria == "Serviços Digitais"
         assert nota.created_at is not None
+        
+    def test_create_with_cnpj_valid(self):
+        data = {
+            "valor_total": 500.0,
+            "data": date(2024, 1, 15),
+            "empresa": "Empresa Teste",
+            "cnpj": "06.990.590/0001-23",
+            "url": "https://example.com/nota.pdf"
+        }
+        nota = NotaFiscalCreate(**data)
+        assert nota.cnpj == "06.990.590/0001-23"

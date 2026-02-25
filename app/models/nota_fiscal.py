@@ -16,6 +16,7 @@ class NotaFiscal(Base):
     data = Column(DateTime, nullable=False)
     empresa = Column(String, nullable=False)
     url = Column(String, nullable=False)
+    cnpj = Column(String(18), nullable=True) 
     categoria = Column(String(50), nullable=True) 
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
