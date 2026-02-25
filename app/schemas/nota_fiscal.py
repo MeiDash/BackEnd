@@ -1,4 +1,4 @@
-from pydantic import BaseModel, field_validator, ConfigDict
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from datetime import date, datetime
 from typing import Optional
 from enum import Enum
@@ -209,3 +209,13 @@ class MetricaResponse(BaseModel):
     updated_at: Optional[datetime] = None
     
     model_config = ConfigDict(from_attributes=True)
+
+class MetricaUpdate(BaseModel):
+    limite: float = Field(..., ge=0, description="Novo limite de faturamento anual")
+
+    @field_validator('limite')
+    @classmethod
+    def validar_limite(cls, v):
+        if v > 500000: 
+            raise ValueError('Limite superior ao permitido para microempresas')
+        return v

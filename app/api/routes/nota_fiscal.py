@@ -1,6 +1,6 @@
 from datetime import date
 from typing import List, Optional
-from app.schemas.nota_fiscal import MetricaResponse, NotaFiscalCreate, NotaFiscalResponse, NotaFiscalUpdate
+from app.schemas.nota_fiscal import MetricaResponse, MetricaUpdate, NotaFiscalCreate, NotaFiscalResponse, NotaFiscalUpdate
 from app.services.nota_fiscal_service import FiscalService
 from app.utils.response import PaginationParams
 from fastapi import APIRouter, Depends, HTTPException, status, Query
@@ -118,6 +118,24 @@ async def get_user_metrics(
     Obtém as métricas atuais do MEI.
     """
     return FiscalService.get_user_metrics(db, current_user.id)
+
+
+@router.put("/metrics/limit", response_model=MetricaResponse)
+async def update_limit(
+    limit_data: MetricaUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Permite ao usuário definir um limite personalizado para alertas.
+    """
+    try:
+        metrica = FiscalService.update_user_limit(db, current_user.id, limit_data.limite)
+        return FiscalService.get_user_metrics(db, current_user.id)
+    except Exception as e:
+        logging.error(f"Erro ao atualizar limite: {str(e)}")
+        raise HTTPException(status_code=500, detail="Erro ao atualizar limite.")
+
 
 @router.get("/{nota_id}", response_model=NotaFiscalResponse, response_model_by_alias=False)
 async def get_nota_fiscal(
