@@ -8,16 +8,13 @@ from passlib.context import CryptContext
 from app.core.config import settings
 
 # Configuração do contexto de criptografia
-# Usar bcrypt em produção, mas plaintext para testes
 import os
 if os.getenv("TESTING"):
-    pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 else:
     pwd_context = CryptContext(
-        schemes=["argon2"],
-        deprecated="auto",
-        # bcrypt__default_rounds=12,
-        # bcrypt__ident="2b"  # Usar versão mais recente do bcrypt
+        schemes=["bcrypt"],
+        deprecated="auto"
     )
 
 
@@ -45,7 +42,15 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     Returns:
         True se as senhas correspondem, False caso contrário
     """
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        print(f"🔐 verify_password: comparando senhas")
+        print(f"   Hash esperado: {hashed_password[:50]}...")
+        result = pwd_context.verify(plain_password, hashed_password)
+        print(f"🔐 verify_password: resultado = {result}")
+        return result
+    except Exception as e:
+        print(f"❌ verify_password: ERRO durante verificação: {type(e).__name__}: {e}")
+        return False
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
