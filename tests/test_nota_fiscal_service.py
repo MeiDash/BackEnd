@@ -281,21 +281,21 @@ class TestFiscalService:
             data=date(2024, 1, 5),
             empresa="Empresa A",
             url="https://example.com/nota1.pdf",
-            categoria=CategoriaEnum.ALIMENTACAO
+            categoria=CategoriaEnum.AGUA_MINERAL
         )
         nota2 = NotaFiscalCreate(
             valor_total=2000.0,
             data=date(2024, 1, 15),
             empresa="Empresa B",
             url="https://example.com/nota2.pdf",
-            categoria=CategoriaEnum.TRANSPORTE
+            categoria=CategoriaEnum.BEBIDAS_ALCOOLICAS
         )
         nota3 = NotaFiscalCreate(
             valor_total=1500.0,
             data=date(2024, 1, 25),
             empresa="Empresa C",
             url="https://example.com/nota3.pdf",
-            categoria=CategoriaEnum.ALIMENTACAO
+            categoria=CategoriaEnum.CARNES_FRIOS
         )
         
         FiscalService.create_nota_fiscal(db_session, test_user.id, nota1)
@@ -305,13 +305,13 @@ class TestFiscalService:
         notas = FiscalService.get_all_notas_fiscais(
             db_session,
             test_user.id,
-            data_inicio=date(2024, 1, 10),
+            data_inicio=date(2024, 1, 1),
             data_fim=date(2024, 1, 31),
-            categoria="Alimentação"
+            categoria="Água Mineral"
         )
         
         assert len(notas) == 1
-        assert notas[0].valor_total == 1500.0
+        assert notas[0].valor_total == 1000.0
 
     def test_filter_combined_empresa_valor(self, test_db, db_session, test_user):
         nota1 = NotaFiscalCreate(
@@ -354,14 +354,14 @@ class TestFiscalService:
                 data=date(2024, 1, i + 1),
                 empresa=f"Empresa {i}",
                 url=f"https://example.com/nota{i}.pdf",
-                categoria=CategoriaEnum.SERVICOS_DIGITAIS if i % 2 == 0 else CategoriaEnum.ALIMENTACAO
+                categoria=CategoriaEnum.AGUA_MINERAL if i % 2 == 0 else CategoriaEnum.CALCADOS
             )
             FiscalService.create_nota_fiscal(db_session, test_user.id, nota_data)
 
         total = FiscalService.count_notas_fiscais(
             db_session,
             test_user.id,
-            categoria="Serviços Digitais"
+            categoria="Água Mineral"
         )
         
         assert total == 3
@@ -624,12 +624,12 @@ class TestFiscalService:
             data=date(2026, 2, 13),
             empresa="Amazon Web Services",
             url="https://example.com/nota.pdf",
-            categoria=CategoriaEnum.SERVICOS_DIGITAIS
+            categoria=CategoriaEnum.AGUA_MINERAL
         )
         
         nota = FiscalService.create_nota_fiscal(db_session, test_user.id, nota_data)
         
-        assert nota.categoria == "Serviços Digitais"
+        assert nota.categoria == "Água Mineral"
         assert nota.valor_total == 1500.00
 
     def test_create_nota_fiscal_without_categoria(self, test_db, db_session, test_user):
@@ -651,7 +651,7 @@ class TestFiscalService:
             data=date(2026, 1, 15),
             empresa="Restaurante ABC",
             url="https://example.com/nota1.pdf",
-            categoria=CategoriaEnum.ALIMENTACAO
+            categoria=CategoriaEnum.AGUA_MINERAL
         )
         
         nota2_data = NotaFiscalCreate(
@@ -659,7 +659,7 @@ class TestFiscalService:
             data=date(2026, 1, 16),
             empresa="Uber",
             url="https://example.com/nota2.pdf",
-            categoria=CategoriaEnum.TRANSPORTE
+            categoria=CategoriaEnum.BEBIDAS_ALCOOLICAS
         )
         
         nota3_data = NotaFiscalCreate(
@@ -667,7 +667,7 @@ class TestFiscalService:
             data=date(2026, 1, 17),
             empresa="Restaurante XYZ",
             url="https://example.com/nota3.pdf",
-            categoria=CategoriaEnum.ALIMENTACAO
+            categoria=CategoriaEnum.AGUA_MINERAL
         )
         
         FiscalService.create_nota_fiscal(db_session, test_user.id, nota1_data)
@@ -677,20 +677,20 @@ class TestFiscalService:
         notas_alimentacao = FiscalService.get_all_notas_fiscais(
             db_session,
             test_user.id,
-            categoria="Alimentação"
+            categoria="Água Mineral"
         )
         
         assert len(notas_alimentacao) == 2
-        assert all(nota.categoria == "Alimentação" for nota in notas_alimentacao)
+        assert all(nota.categoria == "Água Mineral" for nota in notas_alimentacao)
         
         notas_transporte = FiscalService.get_all_notas_fiscais(
             db_session,
             test_user.id,
-            categoria="Transporte"
+            categoria="Bebidas Alcoólicas"
         )
         
         assert len(notas_transporte) == 1
-        assert notas_transporte[0].categoria == "Transporte"
+        assert notas_transporte[0].categoria == "Bebidas Alcoólicas"
 
     def test_update_nota_fiscal_categoria(self, test_db, db_session, test_user):
         nota_data = NotaFiscalCreate(
@@ -703,7 +703,7 @@ class TestFiscalService:
         assert created_nota.categoria is None
         
         update_data = NotaFiscalUpdate(
-            categoria=CategoriaEnum.MATERIAL_ESCRITORIO
+            categoria=CategoriaEnum.AGUA_MINERAL
         )
         
         updated_nota = FiscalService.update_nota_fiscal(
@@ -714,7 +714,7 @@ class TestFiscalService:
         )
         
         assert updated_nota is not None
-        assert updated_nota.categoria == "Material de Escritório"
+        assert updated_nota.categoria == "Água Mineral"
         assert updated_nota.valor_total == 5000.00
 
     def test_count_notas_by_categoria(self, test_db, db_session, test_user):
@@ -724,14 +724,14 @@ class TestFiscalService:
                 data=date(2026, 1, i + 1),
                 empresa=f"Empresa {i}",
                 url=f"https://example.com/nota{i}.pdf",
-                categoria=CategoriaEnum.SERVICOS_DIGITAIS
+                categoria=CategoriaEnum.AGUA_MINERAL
             )
             FiscalService.create_nota_fiscal(db_session, test_user.id, nota_data)
         
         total = FiscalService.count_notas_fiscais(
             db_session,
             test_user.id,
-            categoria="Serviços Digitais"
+            categoria="Água Mineral"
         )
         
         assert total == 3
