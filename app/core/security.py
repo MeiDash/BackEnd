@@ -6,26 +6,17 @@ from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from app.core.config import settings
-
-# Configuração do contexto de criptografia
-# Anteriormente eram usados outros algoritmos (pbkdf2-sha256, bcrypt),
-# então mantemos compatibilidade lendo hashes legados e atualizando para
-# argon2 automaticamente quando o usuário fizer login.
-# Em ambiente de teste podemos forçar outro esquema se desejado via
-# variável de ambiente TESTING.
 import os
 
 # lista de esquemas de hash conhecidos/permitidos pela aplicação
 known_schemes = ["argon2", "pbkdf2_sha256"]
 if os.getenv("TESTING"):
-    # durante testes podemos trocar o esquema para algo mais rápido
-    pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
+
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 else:
     pwd_context = CryptContext(
-        schemes=known_schemes,
-        default="argon2",
-        deprecated="auto",
-        # configurações específicas (ex.: rounds) podem ir aqui
+        schemes=["bcrypt"],
+
     )
 
 
@@ -53,7 +44,15 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     Returns:
         True se as senhas correspondem, False caso contrário
     """
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        print(f"🔐 verify_password: comparando senhas")
+        print(f"   Hash esperado: {hashed_password[:50]}...")
+        result = pwd_context.verify(plain_password, hashed_password)
+        print(f"🔐 verify_password: resultado = {result}")
+        return result
+    except Exception as e:
+        print(f"❌ verify_password: ERRO durante verificação: {type(e).__name__}: {e}")
+        return False
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:

@@ -77,6 +77,18 @@ class UserResponse(UserBase):
     model_config = {
         "from_attributes": True,
     }
+    
+class UserUpdatePassword(CamelModel):
+    """Schema para atualização de senha do usuário logado"""
+    current_password: str = Field(..., description="Senha atual do usuário")
+    new_password: str = Field(..., min_length=8, description="Nova senha")
+
+    @field_validator('new_password')
+    @classmethod
+    def validate_password_length(cls, v):
+        if len(v.encode('utf-8')) > 72:
+            raise ValueError('A nova senha não pode exceder 72 bytes')
+        return v
 
 
 class UserLogin(CamelModel):
