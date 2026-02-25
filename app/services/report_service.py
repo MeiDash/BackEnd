@@ -25,6 +25,7 @@ class ReportService:
     @staticmethod
     def generate_relatorio_geral_pdf(
         db: Session,
+        ids: Optional[str] = None,
         user,                           
         data_inicio: Optional[date] = None,
         data_fim: Optional[date] = None,
@@ -46,7 +47,15 @@ class ReportService:
             valor_max=valor_max,
             categoria=categoria,
         )
-        notas = [n for n in notas if n.user_id == user.id]
+
+        # Filtrar por IDs se fornecido
+        if ids:
+            try:
+                ids_list = [int(id_str.strip()) for id_str in ids.split(",")]
+                notas = [nota for nota in notas if nota.id in ids_list]
+            except ValueError:
+                pass  # Se houver erro na conversão, ignora o filtro
+
         notas.sort(key=lambda n: n.data or date.min)
 
         total = sum(nota.valor_total for nota in notas)
@@ -115,6 +124,7 @@ class ReportService:
     def generate_relatorio_geral_csv(
         db: Session,
         user_id: int,
+        ids: Optional[str] = None,
         data_inicio: Optional[date] = None,
         data_fim: Optional[date] = None,
         empresa: Optional[str] = None,
@@ -137,7 +147,15 @@ class ReportService:
             categoria=categoria,
         )
 
-        notas = [n for n in notas if n.user_id == user_id]
+
+        # Filtrar por IDs se fornecido
+        if ids:
+            try:
+                ids_list = [int(id_str.strip()) for id_str in ids.split(",")]
+                notas = [nota for nota in notas if nota.id in ids_list]
+            except ValueError:
+                pass  # Se houver erro na conversão, ignora o filtro
+
         notas.sort(key=lambda n: n.data or date.min)
 
         output = io.StringIO()

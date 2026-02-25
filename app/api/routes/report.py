@@ -25,7 +25,9 @@ router = APIRouter(
 
 @router.get("/pdf")
 async def relatorio_geral_pdf(
-    current_user = Depends(get_current_active_user),
+    current_user: int = Depends(get_current_active_user),
+    ids: Optional[str] = Query(None, description="IDs das notas fiscais separadas por vírgula (ex: 1,2,3)"),
+
     data_inicio: Optional[date] = Query(None, description="Data inicial (YYYY-MM-DD)"),
     data_fim: Optional[date] = Query(None, description="Data final (YYYY-MM-DD)"),
     empresa: Optional[str] = Query(None, description="Nome ou parte do nome da empresa"),
@@ -39,6 +41,7 @@ async def relatorio_geral_pdf(
         pdf_bytes = ReportService.generate_relatorio_geral_pdf(
             db=db,
             user=current_user,
+            ids=ids,
             data_inicio=data_inicio,
             data_fim=data_fim,
             empresa=empresa,
@@ -58,7 +61,9 @@ async def relatorio_geral_pdf(
 
 @router.get("/csv")
 async def relatorio_geral_csv(
-    current_user: int = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_active_user),
+    ids: Optional[str] = Query(None, description="IDs das notas fiscais separadas por vírgula (ex: 1,2,3)"),
+
     data_inicio: Optional[date] = Query(None),
     data_fim: Optional[date] = Query(None),
     empresa: Optional[str] = Query(None),
@@ -72,6 +77,7 @@ async def relatorio_geral_csv(
         csv_str = ReportService.generate_relatorio_geral_csv(
             db=db,
             user_id=current_user.id,
+            ids=ids,
             data_inicio=data_inicio,
             data_fim=data_fim,
             empresa=empresa,
