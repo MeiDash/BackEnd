@@ -181,6 +181,7 @@ class NotaFiscalResponse(BaseModel):
     arquivo_tamanho: int           
     categoria: Optional[str] = None
     created_at: datetime
+    arquivo_base64: Optional[str] = None  # Imagem em base64 (opcional)
     
     model_config = ConfigDict(from_attributes=True)
 

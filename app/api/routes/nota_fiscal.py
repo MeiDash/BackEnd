@@ -198,7 +198,8 @@ async def get_notas_fiscais(
     empresa: Optional[str] = Query(None, description="Nome ou parte do nome da empresa"),
     valor_min: Optional[float] = Query(None, ge=0, description="Valor mínimo da nota fiscal"),
     valor_max: Optional[float] = Query(None, ge=0, description="Valor máximo da nota fiscal"),
-    categoria: Optional[str] = Query(None, description="Categoria da nota fiscal"),  
+    categoria: Optional[str] = Query(None, description="Categoria da nota fiscal"),
+    include_images: bool = Query(False, description="Incluir imagens em base64 na resposta"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
@@ -240,8 +241,19 @@ async def get_notas_fiscais(
         categoria=categoria  
     )
     
+    # Converter notas para response e adicionar base64 se solicitado
+    notas_response = []
+    for nota in notas:
+        nota_dict = NotaFiscalResponse.model_validate(nota).model_dump()
+        
+        if include_images and nota.arquivo_conteudo:
+            import base64
+            nota_dict['arquivo_base64'] = base64.b64encode(nota.arquivo_conteudo).decode('utf-8')
+        
+        notas_response.append(nota_dict)
+    
     return {
-        "data": [NotaFiscalResponse.model_validate(nota) for nota in notas],
+        "data": notas_response,
         "total": total,
         "skip": skip,
         "limit": limit,

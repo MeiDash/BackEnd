@@ -21,6 +21,7 @@ class NotaFiscal(Base):
     arquivo_tipo = Column(String(50), nullable=False)
     arquivo_tamanho = Column(Integer, nullable=False)
     arquivo_conteudo = Column(LargeBinary, nullable=True)  
+    url = Column(String(500), nullable=True)  # URL ou caminho do arquivo
     
     categoria = Column(String(50), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
