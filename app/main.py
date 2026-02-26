@@ -92,7 +92,26 @@ async def validation_exception_handler(request, exc: RequestValidationError):
                 ]
             }
             return JSONResponse(status_code=HTTP_422_UNPROCESSABLE_ENTITY, content=content)
+    
+    # Processar erros para remover campos não serializáveis (como bytes)
+    processed_errors = []
+    for err in errors:
+        processed_err = {
+            "loc": err.get("loc", []),
+            "msg": err.get("msg", ""),
+            "type": err.get("type", ""),
+        }
+        # Converter input para string se for bytes
+        if "input" in err:
+            input_value = err["input"]
+            if isinstance(input_value, bytes):
+                processed_err["input"] = input_value.decode('utf-8', errors='replace')
+            else:
+                processed_err["input"] = str(input_value)
+        
+        processed_errors.append(processed_err)
+    
     return JSONResponse(
         status_code=HTTP_422_UNPROCESSABLE_ENTITY, 
-        content={"detail": errors}
+        content={"detail": processed_errors}
     )
