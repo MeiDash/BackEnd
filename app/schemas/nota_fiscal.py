@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field, field_validator, ConfigDict
 from datetime import date, datetime
 from typing import Optional
 from enum import Enum
+from fastapi import UploadFile
 
 
 class CategoriaEnum(str, Enum):
@@ -142,9 +143,8 @@ class NotaFiscalCreate(BaseModel):
     valor_total: float
     data: date
     empresa: str
-    url: str
-    categoria: Optional[CategoriaEnum] = None 
     cnpj: Optional[str] = None
+    categoria: Optional[CategoriaEnum] = None
     
     @field_validator('valor_total')
     @classmethod
@@ -158,7 +158,6 @@ class NotaFiscalUpdate(BaseModel):
     valor_total: Optional[float] = None
     data: Optional[date] = None
     empresa: Optional[str] = None
-    url: Optional[str] = None
     cnpj: Optional[str] = None
     categoria: Optional[CategoriaEnum] = None  
     
@@ -177,8 +176,10 @@ class NotaFiscalResponse(BaseModel):
     data: datetime
     empresa: str
     cnpj: Optional[str] = None
-    url: str
-    categoria: Optional[str] = None  
+    arquivo_nome: str             
+    arquivo_tipo: str              
+    arquivo_tamanho: int           
+    categoria: Optional[str] = None
     created_at: datetime
     
     model_config = ConfigDict(from_attributes=True)

@@ -25,8 +25,8 @@ class ReportService:
     @staticmethod
     def generate_relatorio_geral_pdf(
         db: Session,
-        ids: Optional[str] = None,
-        user,                           
+        user,  
+        ids: Optional[str] = None,                         
         data_inicio: Optional[date] = None,
         data_fim: Optional[date] = None,
         empresa: Optional[str] = None,

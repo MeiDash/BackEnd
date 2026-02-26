@@ -17,14 +17,12 @@ class TestNotaFiscalSchemas:
         data = {
             "valor_total": 500.0,
             "data": date(2024, 1, 15),
-            "empresa": "Empresa Teste",
-            "url": "https://example.com/nota.pdf"
+            "empresa": "Empresa Teste"
         }
         nota = NotaFiscalCreate(**data)
         assert nota.valor_total == 500.0
         assert nota.data == date(2024, 1, 15)
         assert nota.empresa == "Empresa Teste"
-        assert nota.url == "https://example.com/nota.pdf"
         assert nota.categoria is None
 
     def test_create_with_categoria(self):
@@ -32,7 +30,6 @@ class TestNotaFiscalSchemas:
             "valor_total": 500.0,
             "data": date(2024, 1, 15),
             "empresa": "Empresa Teste",
-            "url": "https://example.com/nota.pdf",
             "categoria": CategoriaEnum.AGUA_MINERAL
         }
         nota = NotaFiscalCreate(**data)
@@ -42,8 +39,7 @@ class TestNotaFiscalSchemas:
         data = {
             "valor_total": -10,
             "data": date(2024, 1, 15),
-            "empresa": "Empresa Teste",
-            "url": "https://example.com/nota.pdf"
+            "empresa": "Empresa Teste"
         }
         with pytest.raises(ValidationError):
             NotaFiscalCreate(**data)
@@ -52,8 +48,7 @@ class TestNotaFiscalSchemas:
         data = {
             "valor_total": 0,
             "data": date(2024, 1, 15),
-            "empresa": "Empresa Teste",
-            "url": "https://example.com/nota.pdf"
+            "empresa": "Empresa Teste"
         }
         with pytest.raises(ValidationError):
             NotaFiscalCreate(**data)
@@ -63,7 +58,6 @@ class TestNotaFiscalSchemas:
             "valor_total": 500.0,
             "data": date(2024, 1, 15),
             "empresa": "Empresa Teste",
-            "url": "https://example.com/nota.pdf",
             "categoria": "Categoria Inválida"
         }
         with pytest.raises(ValidationError):
@@ -72,8 +66,7 @@ class TestNotaFiscalSchemas:
     def test_create_missing_valor_total(self):
         data = {
             "data": date(2024, 1, 15),
-            "empresa": "Empresa Teste",
-            "url": "https://example.com/nota.pdf"
+            "empresa": "Empresa Teste"
         }
         with pytest.raises(ValidationError):
             NotaFiscalCreate(**data)
@@ -81,8 +74,7 @@ class TestNotaFiscalSchemas:
     def test_create_missing_data(self):
         data = {
             "valor_total": 500.0,
-            "empresa": "Empresa Teste",
-            "url": "https://example.com/nota.pdf"
+            "empresa": "Empresa Teste"
         }
         with pytest.raises(ValidationError):
             NotaFiscalCreate(**data)
@@ -90,17 +82,7 @@ class TestNotaFiscalSchemas:
     def test_create_missing_empresa(self):
         data = {
             "valor_total": 500.0,
-            "data": date(2024, 1, 15),
-            "url": "https://example.com/nota.pdf"
-        }
-        with pytest.raises(ValidationError):
-            NotaFiscalCreate(**data)
-
-    def test_create_missing_url(self):
-        data = {
-            "valor_total": 500.0,
-            "data": date(2024, 1, 15),
-            "empresa": "Empresa Teste"
+            "data": date(2024, 1, 15)
         }
         with pytest.raises(ValidationError):
             NotaFiscalCreate(**data)
@@ -111,7 +93,6 @@ class TestNotaFiscalSchemas:
         assert update.valor_total == 800.0
         assert update.empresa is None
         assert update.data is None
-        assert update.url is None
         assert update.categoria is None
 
     def test_update_partial_empresa(self):
@@ -136,7 +117,6 @@ class TestNotaFiscalSchemas:
         assert update.empresa == "Nova Empresa"
         assert update.categoria == CategoriaEnum.BEBIDAS_NAO_ALCOOLICAS
         assert update.data is None
-        assert update.url is None
 
     def test_update_invalid_valor_negative(self):
         with pytest.raises(ValidationError):
@@ -155,17 +135,18 @@ class TestNotaFiscalSchemas:
         assert update.valor_total is None
         assert update.data is None
         assert update.empresa is None
-        assert update.url is None
         assert update.categoria is None
 
-    def test_response_valid_without_categoria(self):
+    def test_response_valid(self):
         model_data = {
             "id": 1,
             "user_id": 10,
             "valor_total": 500.0,
             "data": date(2024, 1, 15),
             "empresa": "Empresa Teste",
-            "url": "https://example.com/nota.pdf",
+            "arquivo_nome": "nota.pdf",
+            "arquivo_tipo": "application/pdf",
+            "arquivo_tamanho": 12345,
             "created_at": datetime.now()
         }
         resp = NotaFiscalResponse(**model_data)
@@ -174,24 +155,27 @@ class TestNotaFiscalSchemas:
         assert resp.user_id == 10
         assert resp.valor_total == 500.0
         assert resp.empresa == "Empresa Teste"
+        assert resp.arquivo_nome == "nota.pdf"
         assert resp.categoria is None
         assert isinstance(resp.created_at, datetime)
 
-    def test_response_valid_with_categoria(self):
+    def test_response_with_categoria(self):
         model_data = {
             "id": 1,
             "user_id": 10,
             "valor_total": 500.0,
             "data": date(2024, 1, 15),
             "empresa": "Empresa Teste",
-            "url": "https://example.com/nota.pdf",
-            "categoria": "Serviços Digitais",
+            "arquivo_nome": "nota.pdf",
+            "arquivo_tipo": "application/pdf",
+            "arquivo_tamanho": 12345,
+            "categoria": "Água Mineral",
             "created_at": datetime.now()
         }
         resp = NotaFiscalResponse(**model_data)
 
         assert resp.id == 1
-        assert resp.categoria == "Serviços Digitais"
+        assert resp.categoria == "Água Mineral"
 
     def test_categoria_enum_values(self):
         assert CategoriaEnum.AGUA_MINERAL == "Água Mineral"
@@ -212,10 +196,12 @@ class TestNotaFiscalModel:
             valor_total=150.0,
             data=datetime(2024, 1, 15),
             empresa="Empresa Teste",
-            url="https://example.com",
+            arquivo_nome="nota.pdf",
+            arquivo_tipo="application/pdf",
+            arquivo_tamanho=12345,
             categoria=None
         )
-        expected = "<NotaFiscal(id=1, user_id=2, valor_total=150.0, categoria=None)>"
+        expected = "<NotaFiscal(id=1, user_id=2, valor_total=150.0, categoria=None, arquivo=nota.pdf)>"
         assert repr(nota) == expected
 
     def test_model_repr_with_categoria(self):
@@ -225,10 +211,12 @@ class TestNotaFiscalModel:
             valor_total=150.0,
             data=datetime(2024, 1, 15),
             empresa="Empresa Teste",
-            url="https://example.com",
+            arquivo_nome="nota.pdf",
+            arquivo_tipo="application/pdf",
+            arquivo_tamanho=12345,
             categoria="Alimentação"
         )
-        expected = "<NotaFiscal(id=1, user_id=2, valor_total=150.0, categoria=Alimentação)>"
+        expected = "<NotaFiscal(id=1, user_id=2, valor_total=150.0, categoria=Alimentação, arquivo=nota.pdf)>"
         assert repr(nota) == expected
 
     def test_default_values(self):
@@ -237,7 +225,9 @@ class TestNotaFiscalModel:
             valor_total=500.0,
             data=datetime(2024, 1, 15),
             empresa="Empresa",
-            url="a.pdf"
+            arquivo_nome="nota.pdf",
+            arquivo_tipo="application/pdf",
+            arquivo_tamanho=1000
         )
         assert nota.created_at is None
         assert nota.categoria is None
@@ -249,7 +239,9 @@ class TestNotaFiscalModel:
             valor_total=1500.0,
             data=datetime(2024, 2, 20),
             empresa="Google Brasil",
-            url="https://example.com/nota.pdf",
+            arquivo_nome="nota.pdf",
+            arquivo_tipo="application/pdf",
+            arquivo_tamanho=25000,
             categoria="Serviços Digitais",
             created_at=datetime(2024, 2, 20, 10, 30, 0)
         )
@@ -258,6 +250,7 @@ class TestNotaFiscalModel:
         assert nota.valor_total == 1500.0
         assert nota.empresa == "Google Brasil"
         assert nota.categoria == "Serviços Digitais"
+        assert nota.arquivo_nome == "nota.pdf"
         assert nota.created_at is not None
         
     def test_create_with_cnpj_valid(self):
@@ -265,8 +258,7 @@ class TestNotaFiscalModel:
             "valor_total": 500.0,
             "data": date(2024, 1, 15),
             "empresa": "Empresa Teste",
-            "cnpj": "06.990.590/0001-23",
-            "url": "https://example.com/nota.pdf"
+            "cnpj": "06.990.590/0001-23"
         }
         nota = NotaFiscalCreate(**data)
         assert nota.cnpj == "06.990.590/0001-23"
