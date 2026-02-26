@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Boolean
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Boolean, LargeBinary
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db import Base 
@@ -15,16 +15,20 @@ class NotaFiscal(Base):
     valor_total = Column(Float, nullable=False)
     data = Column(DateTime, nullable=False)
     empresa = Column(String, nullable=False)
-    url = Column(String, nullable=False)
-    cnpj = Column(String(18), nullable=True) 
-    categoria = Column(String(50), nullable=True) 
+    cnpj = Column(String(18), nullable=True)
     
+    arquivo_nome = Column(String(255), nullable=False)
+    arquivo_tipo = Column(String(50), nullable=False)
+    arquivo_tamanho = Column(Integer, nullable=False)
+    arquivo_conteudo = Column(LargeBinary, nullable=True)  
+    
+    categoria = Column(String(50), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="notas_fiscais")
     
     def __repr__(self):
-        return f"<NotaFiscal(id={self.id}, user_id={self.user_id}, valor_total={self.valor_total}, categoria={self.categoria})>"
+        return f"<NotaFiscal(id={self.id}, user_id={self.user_id}, valor_total={self.valor_total}, categoria={self.categoria}, arquivo={self.arquivo_nome})>"
 
 
 class Metrica(Base):

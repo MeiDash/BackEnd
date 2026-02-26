@@ -4,11 +4,12 @@ from app.models.nota_fiscal import NotaFiscal, Metrica
 from app.models import User 
 from app.schemas.nota_fiscal import NotaFiscalCreate, MetricaResponse, NotaFiscalUpdate
 from app.services.email_service import EmailService, ALERT_THRESHOLDS
-from typing import List
+from typing import List, Tuple
 from typing import List, Optional
 import logging
 from datetime import date, datetime, time 
 from fastapi import HTTPException
+logger = logging.getLogger(__name__)
 
 # Define a precisão dos limiares para comparação
 COMPARISON_PRECISION = 0.0001 
@@ -194,29 +195,67 @@ class FiscalService:
                 logging.info(f"Alerta enviado para {user.email}: Limiar {threshold*100:.0f}% atingido.")
 
     @staticmethod
-    def create_nota_fiscal(db: Session, user_id: int, nota_data: NotaFiscalCreate) -> NotaFiscal:
+    def create_nota_fiscal_with_file(
+        db: Session,
+        user_id: int,
+        nota_data: NotaFiscalCreate,
+        arquivo_nome: str,
+        arquivo_tipo: str,
+        arquivo_conteudo: bytes
+    ) -> NotaFiscal:
+        """Cria nota fiscal com arquivo uploadado"""
+        
         user = db.query(User).filter(User.id == user_id).first()
-        if not user or not user.is_active:  
+        if not user or not user.is_active:
             raise HTTPException(status_code=400, detail="Usuário não encontrado ou inativo.")
-            
+        
+        logger.info(f"📝 Criando nota fiscal para user_id={user_id}, arquivo={arquivo_nome} ({len(arquivo_conteudo)} bytes)")
+        
         db_nota = NotaFiscal(
             user_id=user_id,
             valor_total=nota_data.valor_total,
             data=nota_data.data,
             empresa=nota_data.empresa,
             cnpj=nota_data.cnpj,
-            url=nota_data.url,
-            categoria=nota_data.categoria.value if nota_data.categoria else None,  
+            arquivo_nome=arquivo_nome,
+            arquivo_tipo=arquivo_tipo,
+            arquivo_tamanho=len(arquivo_conteudo),
+            arquivo_conteudo=arquivo_conteudo,  # ✅ Salva binário no banco
+            categoria=nota_data.categoria.value if nota_data.categoria else None,
         )
         
         db.add(db_nota)
         db.commit()
         db.refresh(db_nota)
         
+        logger.info(f"✅ Nota fiscal criada: ID={db_nota.id}")
+        
         metrica = FiscalService.calculate_and_update_metrics(db, user_id)
         FiscalService.check_limit_and_notify(db, metrica, user)
         
         return db_nota
+    
+    @staticmethod
+    def get_arquivo_nota_fiscal(
+        db: Session,
+        nota_id: int,
+        user_id: int
+    ) -> Optional[Tuple[bytes, str, str]]:
+        """
+        Retorna arquivo da nota fiscal (apenas do usuário autenticado)
+        
+        Returns:
+            Tuple (conteudo, nome, tipo) ou None
+        """
+        nota = db.query(NotaFiscal).filter(
+            NotaFiscal.id == nota_id,
+            NotaFiscal.user_id == user_id  # ✅ Segurança
+        ).first()
+        
+        if not nota or not nota.arquivo_conteudo:
+            return None
+        
+        return (nota.arquivo_conteudo, nota.arquivo_nome, nota.arquivo_tipo)
 
     @staticmethod
     def get_notas_fiscais_by_user(db: Session, user_id: int) -> List[NotaFiscal]:
