@@ -85,7 +85,6 @@ async def forgot_password(
         return generic_response 
 
     token = UserService.create_reset_token(email=user.email)
-    print(f"TOKEN: {token} #")
 
     try:
         UserService.send_reset_email(to_email=user.email, token=token)
