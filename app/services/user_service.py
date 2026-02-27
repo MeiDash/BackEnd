@@ -1,14 +1,24 @@
 """
 Serviço de usuário com lógica de negócio
 """
+import ssl
+from app.core.config import settings
 from app.schemas.user import UserUpdatePassword
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from app.models import User
 from app.schemas import UserCreate, UserUpdate, UserResponse
+from app.schemas import UserLogin, Token, UserResponse, ForgotPasswordRequest, MessageResponse
 from app.core.security import hash_password, verify_password, pwd_context
 from typing import Optional, List
-
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from passlib.context import CryptContext
+from jose import JWTError, jwt
+import os
+from dotenv import load_dotenv
+import smtplib
+from datetime import datetime, timezone, timedelta
 
 class UserService:
     """Serviço para operações de usuário"""
@@ -162,5 +172,65 @@ class UserService:
             return False
             
         db_user.hashed_password = hash_password(passwords.new_password)
+        db.commit()
+        return True
+
+    @staticmethod
+    def send_reset_email(to_email: str, token: str) -> None:
+        reset_link = f"{settings.FRONTEND_URL}/recuperar-senha?token={token}"
+
+        html = f"""
+        <html><body>
+        <p>Você solicitou a redefinição de senha.</p>
+        <p><a href="{reset_link}">Clique aqui para redefinir sua senha</a></p>
+        <p><small>O link expira em {settings.RESET_TOKEN_EXPIRE_MINUTES} minutos.
+            Se não foi você, ignore este e-mail.</small></p>
+        </body></html>
+        """
+
+        msg = MIMEText(html, "html", "utf-8")
+        msg["Subject"] = "Redefinição de senha"
+        msg["From"] = settings.EMAIL_SENDER
+        msg["To"] = to_email
+
+        context = ssl.create_default_context()  # ← isso faltava
+
+        with smtplib.SMTP(settings.SMTP_SERVER, settings.SMTP_PORT) as server:
+            server.starttls(context=context)    # ← passando o context
+            server.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
+            server.send_message(msg)            # ← igual ao seu EmailService
+
+    @staticmethod
+    def create_reset_token(email: str) -> str:
+        """Gera um JWT de reset com expiração e 'purpose' para evitar reutilização."""
+        expire = datetime.now(timezone.utc) + timedelta(minutes=settings.RESET_TOKEN_EXPIRE_MINUTES)
+        payload = {
+            "sub": email,
+            "purpose": "password_reset",  # impede uso de tokens de outros fluxos
+            "exp": expire,
+        }
+        return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+    @staticmethod
+    def decode_reset_token(token: str) -> str | None:
+        try:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+            if payload.get("purpose") != "password_reset":
+                return None
+            return payload.get("sub")  # o email
+        except JWTError:
+            return None
+        
+    @staticmethod
+    def reset_password(token: str, new_password: str, db: Session) -> bool:
+        email = UserService.decode_reset_token(token)
+        if not email:
+            return False
+
+        user = db.query(User).filter(User.email == email).first()
+        if not user:
+            return False
+
+        user.hashed_password = hash_password(new_password)
         db.commit()
         return True

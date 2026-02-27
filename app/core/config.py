@@ -3,7 +3,8 @@ Configurações da aplicação
 """
 from pydantic_settings import BaseSettings
 from typing import List
-
+from passlib.context import CryptContext
+import os
 
 class Settings(BaseSettings):
     """Configurações da aplicação"""
@@ -17,9 +18,10 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql://user:password@localhost:5432/your_db_name"
     
     # Segurança
-    SECRET_KEY: str = "your-secret-key-change-this-in-production"
+    SECRET_KEY: str = os.getenv("SECRET_KEY")
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    RESET_TOKEN_EXPIRE_MINUTES: int=30
     
     # CORS
     ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:5173"
@@ -30,8 +32,9 @@ class Settings(BaseSettings):
     SMTP_USERNAME: str
     SMTP_PASSWORD: str
     EMAIL_SENDER: str
-    
+
     REPORT_LOGO_PATH: str
+    FRONTEND_URL: str 
 
     class Config:
         env_file = ".env"

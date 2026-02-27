@@ -108,3 +108,15 @@ class TokenData(CamelModel):
     """Schema para dados do token"""
     sub: str  # email do usuário
     exp: Optional[datetime] = None
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+
+class MessageResponse(BaseModel):
+    message: str
