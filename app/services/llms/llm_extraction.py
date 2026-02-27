@@ -1,7 +1,7 @@
 import ollama
 from ollama import Client
 
-URL_REMOTA = "https://hiking-indiana-yard-luggage.trycloudflare.com"
+URL_REMOTA = "https://david-ordinary-ordering-inc.trycloudflare.com"
 
 client = Client(host=URL_REMOTA)
 
