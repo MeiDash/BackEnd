@@ -132,8 +132,6 @@ class ReportService:
         valor_max: Optional[float] = None,
         categoria: Optional[str] = None,
     ) -> str:
-        ReportService._validate_user(user_id)
-
         notas = FiscalService.get_all_notas_fiscais(
             db=db,
             user_id=user_id,
