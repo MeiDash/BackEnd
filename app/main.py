@@ -1,7 +1,7 @@
 """
 Aplicação principal do FastAPI
 """
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.status import HTTP_422_UNPROCESSABLE_ENTITY
@@ -57,8 +57,38 @@ async def health_check():
     }
 
 
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request, exc: HTTPException):
+    """Trata HTTPExceptions (como 401, 403, etc.) sem causar crash"""
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
+    # Log apenas para erros 5xx ou situações inesperadas
+    if exc.status_code >= 500:
+        logger.error(f"HTTPException {exc.status_code}: {exc.detail}")
+    
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "detail": exc.detail
+        },
+        headers=exc.headers
+    )
+
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
+    """Captura todas as exceções não tratadas para evitar crash do servidor"""
+    import traceback
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    logger.error(f"Exceção não tratada: {type(exc).__name__}: {str(exc)}")
+    
+    if settings.ENVIRONMENT == "development":
+        logger.error(traceback.format_exc())
+    
     return JSONResponse(
         status_code=500,
         content={

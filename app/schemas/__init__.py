@@ -9,6 +9,9 @@ from app.schemas.user import (
     UserLogin,
     Token,
     TokenData,
+    ForgotPasswordRequest,
+    ResetPasswordRequest,
+    MessageResponse
 )
 
 from app.schemas.nota_fiscal import (
