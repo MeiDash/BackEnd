@@ -1,7 +1,7 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-from jose import jwt, JWTError
+from jose import jwt, JWTError, ExpiredSignatureError
 import logging
 
 from app.db import get_db
@@ -21,11 +21,9 @@ def get_current_user(
     token: str = Depends(oauth2_scheme)
 ) -> User:
     
-    logger.info(f"Token recebido: {token[:20]}...")  
-    
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Não foi possível validar as credenciais",
+        detail="Token inválido ou expirado. Por favor, faça login novamente.",
         headers={"WWW-Authenticate": "Bearer"},
     )
 
@@ -37,48 +35,54 @@ def get_current_user(
             algorithms=[settings.ALGORITHM]
         )
         
-        logger.info(f"Payload decodificado: {payload}")
-        
         # Extrai o user_id
         user_id = payload.get("sub")
         
         if user_id is None:
-            logger.error("'sub' não encontrado no payload")
+            logger.warning("Token sem 'sub' no payload")
             raise credentials_exception
-        
-        logger.info(f"user_id extraído: {user_id} (tipo: {type(user_id)})")
         
         # Converte para int
         user_id = int(user_id)
-        logger.info(f"user_id convertido para int: {user_id}")
         
+    except jwt.ExpiredSignatureError:
+        logger.info("Token expirado recebido")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token expirado. Por favor, faça login novamente.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     except JWTError as e:
-        logger.error(f"Erro JWT: {str(e)}")
+        logger.warning(f"Erro JWT: {type(e).__name__}")
         raise credentials_exception
-    except ValueError as e:
-        logger.error(f"Erro ao converter user_id: {str(e)}")
+    except ValueError:
+        logger.warning("Erro ao converter user_id para int")
         raise credentials_exception
     except Exception as e:
-        logger.error(f"Erro inesperado: {str(e)}")
+        logger.error(f"Erro inesperado na validação do token: {type(e).__name__}")
         raise credentials_exception
 
     # Busca o usuário
-    user = UserService.get_user_by_id(db, user_id=user_id)
+    try:
+        user = UserService.get_user_by_id(db, user_id=user_id)
+    except Exception as e:
+        logger.error(f"Erro ao buscar usuário: {type(e).__name__}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Erro ao validar usuário"
+        )
     
     if user is None:
-        logger.error(f"Usuário {user_id} não encontrado no banco")
+        logger.warning(f"Usuário {user_id} não encontrado")
         raise credentials_exception
 
-    logger.info(f"Usuário encontrado: {user.email} (ativo: {user.is_active})")
-
     if not user.is_active:
-        logger.warning(f"Usuário {user.email} está inativo")
+        logger.warning(f"Tentativa de acesso com usuário inativo: {user.email}")
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_403_FORBIDDEN,
             detail="Usuário inativo"
         )
 
-    logger.info(f"Autenticação bem-sucedida para {user.email}")
     return user
 
 
