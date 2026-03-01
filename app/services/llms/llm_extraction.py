@@ -17,4 +17,4 @@ class LLMExtraction:
                 {"role": "user", "content": texto}
             ]
         )
-        return resp["message"]["content"]hid
+        return resp["message"]["content"]
