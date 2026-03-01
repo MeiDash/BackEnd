@@ -1,7 +1,7 @@
 import ollama
 from ollama import Client
 
-URL_REMOTA = "https://david-ordinary-ordering-inc.trycloudflare.com"
+URL_REMOTA = "https://jose-jardel-alves70--ollama-server-ollama-proxy.modal.run"
 
 client = Client(host=URL_REMOTA)
 
@@ -17,4 +17,4 @@ class LLMExtraction:
                 {"role": "user", "content": texto}
             ]
         )
-        return resp["message"]["content"]
+        return resp["message"]["content"]hid
