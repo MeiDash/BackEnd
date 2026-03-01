@@ -159,10 +159,11 @@ class ReportService:
         output = io.StringIO()
         writer = csv.writer(output)
 
-        writer.writerow(["id", "valor", "categoria", "empresa", "data"])
+        writer.writerow(["id", "cnpj", "valor", "categoria", "empresa", "data"])
         for nota in notas:
             writer.writerow([
                 nota.id,
+                nota.cnpj,
                 nota.valor_total,
                 nota.categoria or "-",
                 nota.empresa or "-",
